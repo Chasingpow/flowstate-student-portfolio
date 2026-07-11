@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowState Student Portfolio Builder</title>
+</head>
+<body>
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2e; --panel2:#0e1626; --line:#1e2b45;
+    --txt:#e8eefc; --muted:#93a3c4; --accent:#22c55e;
+    --green:#22c55e; --blue:#3b82f6; --yellow:#eab308;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 600px at 80% -10%,#13203a 0%,var(--bg) 55%);
+    color:var(--txt); line-height:1.4; padding:24px; min-height:100vh;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+  header{margin-bottom:22px}
+  .title{font-size:26px;font-weight:800;letter-spacing:-.5px;display:flex;align-items:center;gap:10px}
+  .title .dot{width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 14px var(--accent)}
+  .subtitle{color:var(--muted);margin-top:6px;font-size:14px;max-width:760px}
+  .grid{display:grid;grid-template-columns:1.35fr 1fr;gap:18px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .panel h2{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:14px;font-weight:700}
+  .caption{font-size:12px;color:var(--muted);margin:-8px 0 12px}
+
+  /* Setup controls */
+  .setup{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:18px}
+  .field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:5px}
+  .field input{width:100%;background:var(--panel2);border:1px solid var(--line);border-radius:10px;color:var(--txt);padding:9px 10px;font-size:15px;font-weight:600}
+  .field input:focus{outline:none;border-color:var(--accent)}
+  .field input.locked{background:#0a1120;color:var(--muted);cursor:default;opacity:.75}
+  .field input.locked:focus{border-color:var(--line)}
+  .field label .lock{font-size:10px;opacity:.7}
+  .field .suffix{font-size:11px;color:var(--muted);margin-top:3px}
+
+  /* Holdings table */
+  .cat{margin-bottom:16px}
+  .cat-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .cat-name{font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px}
+  .swatch{width:11px;height:11px;border-radius:3px}
+  .cat-total{font-size:12px;font-weight:700;padding:2px 9px;border-radius:20px;background:var(--panel2);border:1px solid var(--line)}
+  .cat-total.ok{color:var(--green);border-color:rgba(34,197,94,.4)}
+  .cat-total.bad{color:#f87171;border-color:rgba(248,113,113,.4)}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);text-align:left;padding:4px 6px;font-weight:600}
+  td{padding:3px 6px}
+  .hrow td:first-child{width:16px}
+  .cswatch{width:12px;height:12px;border-radius:3px;display:inline-block}
+  .cell{background:var(--panel2);border:1px solid var(--line);border-radius:8px;color:var(--txt);padding:7px 8px;font-size:13px;width:100%}
+  .cell:focus{outline:none;border-color:var(--accent)}
+  .cell::placeholder{color:#546085}
+  .cell:disabled{opacity:.85;cursor:default}
+  .field input:disabled{opacity:.7;cursor:default}
+  .cell.tick{font-weight:700;text-transform:uppercase}
+  .cell.num{text-align:right;font-variant-numeric:tabular-nums}
+  .col-alloc,.col-ret{width:78px}
+  .col-tick{width:72px}
+  /* Return cell (hidden until lock-in) */
+  .retcell{display:flex;align-items:center;justify-content:flex-end;min-height:32px;font-weight:700}
+  .retcell.retmask{justify-content:center;color:#4b587a;background:#0a1120;font-size:14px}
+  .retcell.revealed{color:var(--txt);background:#0a1120}
+  .grand{display:flex;justify-content:space-between;align-items:center;padding:10px 4px 0;border-top:1px solid var(--line);margin-top:6px;font-size:13px}
+  .grand b{font-size:15px}
+
+  /* Pie */
+  .pie-wrap{display:flex;flex-direction:column;align-items:center}
+  .pie-legend{width:100%;margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:5px 14px}
+  .leg{display:flex;align-items:center;gap:8px;font-size:12px}
+  .leg .cswatch{flex:none}
+  .leg .lt{font-weight:600}
+  .leg .lp{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
+  .center-r{font-size:11px;fill:var(--muted)}
+  .center-v{font-size:24px;font-weight:800;fill:var(--txt)}
+  .center-lock{font-size:30px}
+  .pie-hint{font-size:12px;color:var(--muted);text-align:center;margin-top:10px;max-width:230px}
+
+  /* Scenario cards */
+  .scenarios{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px}
+  @media(max-width:560px){.scenarios{grid-template-columns:1fr}}
+  .scard{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--panel2);position:relative;overflow:hidden}
+  .scard.a{border-color:rgba(59,130,246,.35)}
+  .scard.b{border-color:rgba(34,197,94,.45)}
+  .scard .tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;padding:3px 10px;border-radius:20px;display:inline-block;margin-bottom:12px}
+  .scard.a .tag{background:rgba(59,130,246,.15);color:#93c5fd}
+  .scard.b .tag{background:rgba(34,197,94,.15);color:#86efac}
+  .metric{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px dashed var(--line)}
+  .metric:last-child{border-bottom:none}
+  .metric .ml{font-size:12px;color:var(--muted)}
+  .metric .mv{font-weight:700;font-variant-numeric:tabular-nums}
+  .metric.final .mv{font-size:22px;color:var(--txt)}
+  .metric.final .ml{font-size:13px;color:var(--txt);font-weight:600}
+  .mv.hid{color:#4b587a;font-weight:700}
+  .grow-pos{color:var(--green)}
+  .delta{margin-top:14px;font-size:12px;color:var(--muted);text-align:center}
+  .delta b{color:var(--green)}
+  .locked-panel{position:relative}
+  .lockveil{text-align:center;color:var(--muted);font-size:13px;padding:6px 0 2px}
+
+  /* Line chart */
+  .chart-panel{margin-top:18px}
+  .chartbox{width:100%;overflow-x:auto}
+  .chart-holdmsg{display:flex;align-items:center;justify-content:center;height:200px;color:#4b587a;font-size:14px;gap:10px}
+  .legend-line{display:flex;gap:18px;justify-content:center;margin-top:10px;font-size:12px}
+  .legend-line span{display:flex;align-items:center;gap:6px}
+  .ll{width:16px;height:3px;border-radius:2px}
+
+  .btns{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  .btn{background:var(--panel2);border:1px solid var(--line);color:var(--txt);padding:10px 16px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer}
+  .btn:hover{border-color:var(--accent)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn.primary{background:var(--accent);color:#04220f;border-color:var(--accent)}
+  .btn:disabled{cursor:default;opacity:.85;border-color:var(--line)}
+  .btn.done{background:rgba(34,197,94,.15);color:#86efac;border-color:rgba(34,197,94,.4)}
+  .lockmsg{margin-top:10px;font-size:12.5px;min-height:16px}
+  .lockmsg.warn{color:#fbbf24}
+  .lockmsg.ok{color:var(--green)}
+  .lockmsg.sending{color:#93c5fd}
+  .submit-row{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+  .submit-row label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:6px;font-weight:600}
+  .submit-row input{max-width:340px}
+  footer{margin-top:24px;color:var(--muted);font-size:11px;text-align:center;line-height:1.6}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="title"><span class="dot"></span>FlowState Student Portfolio Builder</div>
+    <div class="subtitle">Pick your own 4 ETFs · 3 blue chips · 3 moonshots. Your expected returns and final projection stay <b>hidden</b> until you lock in — and once you lock in, you can't change a thing and your portfolio is submitted to FlowState Alpha. Choose carefully: it's one and done.</div>
+  </header>
+
+  <div class="grid">
+    <!-- LEFT: setup + holdings -->
+    <div class="panel">
+      <h2>Portfolio Setup</h2>
+      <div class="setup">
+        <div class="field"><label>Starting Age</label><input id="startAge" type="number" value="16"><div class="suffix">years old</div></div>
+        <div class="field"><label>Retirement Age <span class="lock">🔒</span></label><input id="retireAge" class="locked" type="number" value="45" readonly tabindex="-1"><div class="suffix"><span id="horizon">29</span>-yr horizon</div></div>
+        <div class="field"><label>Starting Deposit <span class="lock">🔒</span></label><input id="startDeposit" class="locked" type="number" value="50000" readonly tabindex="-1"><div class="suffix">per student</div></div>
+        <div class="field"><label>Deposit — Plan A <span class="lock">🔒</span></label><input id="depA" class="locked" type="number" value="5000" readonly tabindex="-1"><div class="suffix">per year</div></div>
+        <div class="field"><label>Deposit — Plan B <span class="lock">🔒</span></label><input id="depB" class="locked" type="number" value="10000" readonly tabindex="-1"><div class="suffix">per year</div></div>
+      </div>
+
+      <h2 style="margin-top:4px">Your Holdings — pick a ticker for each row</h2>
+      <div class="caption">Weights are pre-set to the 55 / 25 / 20 plan (still editable). Each holding's <b>expected return is hidden</b> 🔒 until you lock in — start typing a ticker to see suggestions.</div>
+      <div id="cats"></div>
+      <div id="datalists"></div>
+
+      <div class="grand">
+        <span>Total allocation</span>
+        <span id="grandAlloc"><b>100%</b></span>
+      </div>
+      <div class="grand" style="border-top:none;padding-top:2px">
+        <span>Blended expected annual return</span>
+        <span id="blendRet"><b>🔒</b></span>
+      </div>
+
+      <div class="submit-row">
+        <label for="studentEmail">Your email <span style="color:#f87171">*</span> — so FlowState Alpha knows it's yours</label>
+        <input id="studentEmail" class="cell" type="email" placeholder="you@school.edu" autocomplete="email">
+      </div>
+
+      <div class="btns" id="btnRow">
+        <button class="btn" id="resetBtn" onclick="resetAll()">↺ Start over</button>
+        <button class="btn primary" id="lockBtn" onclick="lockPortfolio()">🔒 Lock in &amp; submit</button>
+      </div>
+      <div class="lockmsg" id="lockMsg"></div>
+    </div>
+
+    <!-- RIGHT: pie -->
+    <div class="panel">
+      <h2>Allocation Breakdown</h2>
+      <div class="pie-wrap">
+        <svg id="pie" viewBox="0 0 260 260" width="260" height="260"></svg>
+        <div class="pie-legend" id="legend"></div>
+        <div class="pie-hint" id="pieHint">ETFs shade green · blue chips blue · moonshots yellow. Pick tickers to name your slices.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scenario results -->
+  <div class="panel locked-panel" style="margin-top:18px">
+    <h2>Projection at Retirement <span id="retLabel" style="color:var(--muted);text-transform:none;letter-spacing:0"></span></h2>
+    <div class="scenarios">
+      <div class="scard a">
+        <span class="tag">Plan A · $<span id="tagA">5,000</span>/yr</span>
+        <div class="metric"><span class="ml">Total deposited</span><span class="mv" id="depTotA">—</span></div>
+        <div class="metric"><span class="ml">Total growth</span><span class="mv grow-pos" id="growA">—</span></div>
+        <div class="metric final"><span class="ml">Final value</span><span class="mv" id="finA">—</span></div>
+      </div>
+      <div class="scard b">
+        <span class="tag">Plan B · $<span id="tagB">10,000</span>/yr</span>
+        <div class="metric"><span class="ml">Total deposited</span><span class="mv" id="depTotB">—</span></div>
+        <div class="metric"><span class="ml">Total growth</span><span class="mv grow-pos" id="growB">—</span></div>
+        <div class="metric final"><span class="ml">Final value</span><span class="mv" id="finB">—</span></div>
+      </div>
+    </div>
+    <div class="delta" id="deltaMsg"></div>
+  </div>
+
+  <!-- Growth chart -->
+  <div class="panel chart-panel">
+    <h2>Growth Over Time</h2>
+    <div class="chartbox"><svg id="chart" viewBox="0 0 900 340" width="100%" height="340" preserveAspectRatio="xMidYMid meet"></svg></div>
+    <div class="legend-line" id="chartLegend">
+      <span><span class="ll" style="background:var(--blue)"></span>Plan A ($<span id="llA">5,000</span>/yr)</span>
+      <span><span class="ll" style="background:var(--green)"></span>Plan B ($<span id="llB">10,000</span>/yr)</span>
+    </div>
+  </div>
+
+  <footer>
+    Educational projection only — not financial advice. Return figures are long-run estimates assigned to each ticker, not guarantees; real markets vary year to year. Each holding compounds at its expected return with deposits added at each year-end.<br>
+    FlowState Student Portfolio Builder
+  </footer>
+</div>
+
+<script>
+// ---------- Category shells ----------
+const GREENS  = ['#14532d','#166534','#16a34a','#4ade80'];        // 4 ETFs
+const BLUES   = ['#1e3a8a','#2563eb','#60a5fa'];                  // 3 blue chips
+const YELLOWS = ['#a16207','#eab308','#fde047'];                  // 3 moonshots
+
+// Pre-set allocations (55/25/20) + baseline return used until a specific ticker is picked
+const DEFAULTS = [
+  {cat:'ETFs (55%)',      key:'etf', color:'var(--green)', pal:GREENS,  base:10, rows:[
+    {tick:'',name:'',alloc:15,ret:10},{tick:'',name:'',alloc:15,ret:10},
+    {tick:'',name:'',alloc:15,ret:10},{tick:'',name:'',alloc:10,ret:10}]},
+  {cat:'Blue Chips (25%)',key:'blue',color:'var(--blue)',  pal:BLUES,   base:10, rows:[
+    {tick:'',name:'',alloc:9,ret:10},{tick:'',name:'',alloc:8,ret:10},{tick:'',name:'',alloc:8,ret:10}]},
+  {cat:'Moonshots (20%)', key:'moon',color:'var(--yellow)',pal:YELLOWS, base:18, rows:[
+    {tick:'',name:'',alloc:7,ret:18},{tick:'',name:'',alloc:7,ret:18},{tick:'',name:'',alloc:6,ret:18}]},
+];
+
+// ---------- Ticker → {name, expected annual return %, bucket} ----------
+const RETURNS = {
+  VOO:{n:'S&P 500 ETF',r:10,b:'etf'}, VTI:{n:'Total Market ETF',r:10,b:'etf'}, SPY:{n:'S&P 500 ETF',r:10,b:'etf'},
+  IVV:{n:'S&P 500 ETF',r:10,b:'etf'}, QQQ:{n:'Nasdaq-100 ETF',r:12,b:'etf'}, QQQM:{n:'Nasdaq-100 ETF',r:12,b:'etf'},
+  VGT:{n:'Info Tech ETF',r:12,b:'etf'}, VUG:{n:'Growth ETF',r:12,b:'etf'}, SCHG:{n:'Large-Cap Growth ETF',r:12,b:'etf'},
+  SCHD:{n:'Dividend ETF',r:9,b:'etf'}, VYM:{n:'High Dividend ETF',r:9,b:'etf'}, DGRO:{n:'Dividend Growth ETF',r:9,b:'etf'},
+  VIG:{n:'Dividend Appreciation ETF',r:9,b:'etf'}, DIA:{n:'Dow 30 ETF',r:9,b:'etf'}, IWM:{n:'Russell 2000 ETF',r:9,b:'etf'},
+  VXUS:{n:'International ETF',r:8,b:'etf'}, VEA:{n:'Developed Mkts ETF',r:8,b:'etf'}, VWO:{n:'Emerging Mkts ETF',r:8,b:'etf'},
+  SOXX:{n:'Semiconductor ETF',r:14,b:'etf'}, SMH:{n:'Semiconductor ETF',r:14,b:'etf'}, ARKK:{n:'Innovation ETF',r:13,b:'etf'},
+  BND:{n:'Total Bond ETF',r:4,b:'etf'}, AGG:{n:'Total Bond ETF',r:4,b:'etf'},
+  AAPL:{n:'Apple',r:11,b:'blue'}, MSFT:{n:'Microsoft',r:12,b:'blue'}, GOOGL:{n:'Alphabet',r:11,b:'blue'},
+  GOOG:{n:'Alphabet',r:11,b:'blue'}, AMZN:{n:'Amazon',r:12,b:'blue'}, META:{n:'Meta Platforms',r:12,b:'blue'},
+  JNJ:{n:'Johnson & Johnson',r:8,b:'blue'}, PG:{n:'Procter & Gamble',r:8,b:'blue'}, KO:{n:'Coca-Cola',r:7,b:'blue'},
+  PEP:{n:'PepsiCo',r:8,b:'blue'}, WMT:{n:'Walmart',r:9,b:'blue'}, HD:{n:'Home Depot',r:9,b:'blue'},
+  V:{n:'Visa',r:11,b:'blue'}, MA:{n:'Mastercard',r:11,b:'blue'}, JPM:{n:'JPMorgan Chase',r:9,b:'blue'},
+  'BRK.B':{n:'Berkshire Hathaway',r:10,b:'blue'}, UNH:{n:'UnitedHealth',r:10,b:'blue'}, XOM:{n:'Exxon Mobil',r:8,b:'blue'},
+  CVX:{n:'Chevron',r:8,b:'blue'}, DIS:{n:'Disney',r:8,b:'blue'}, MCD:{n:"McDonald's",r:9,b:'blue'},
+  COST:{n:'Costco',r:11,b:'blue'}, NKE:{n:'Nike',r:9,b:'blue'}, CAT:{n:'Caterpillar',r:9,b:'blue'},
+  HON:{n:'Honeywell',r:9,b:'blue'}, LLY:{n:'Eli Lilly',r:12,b:'blue'}, AVGO:{n:'Broadcom',r:13,b:'blue'},
+  TSLA:{n:'Tesla',r:18,b:'moon'}, NVDA:{n:'Nvidia',r:20,b:'moon'}, PLTR:{n:'Palantir',r:22,b:'moon'},
+  AMD:{n:'AMD',r:17,b:'moon'}, COIN:{n:'Coinbase',r:22,b:'moon'}, MSTR:{n:'MicroStrategy',r:25,b:'moon'},
+  RIVN:{n:'Rivian',r:20,b:'moon'}, LCID:{n:'Lucid',r:20,b:'moon'}, SOFI:{n:'SoFi',r:18,b:'moon'},
+  HOOD:{n:'Robinhood',r:20,b:'moon'}, RBLX:{n:'Roblox',r:18,b:'moon'}, NET:{n:'Cloudflare',r:18,b:'moon'},
+  SNOW:{n:'Snowflake',r:17,b:'moon'}, CRWD:{n:'CrowdStrike',r:18,b:'moon'}, MARA:{n:'Marathon Digital',r:24,b:'moon'},
+  RIOT:{n:'Riot Platforms',r:24,b:'moon'}, SMCI:{n:'Super Micro',r:22,b:'moon'}, ARM:{n:'Arm Holdings',r:18,b:'moon'},
+  DKNG:{n:'DraftKings',r:18,b:'moon'}, UPST:{n:'Upstart',r:20,b:'moon'}, IONQ:{n:'IonQ',r:24,b:'moon'},
+  ASTS:{n:'AST SpaceMobile',r:25,b:'moon'}, AI:{n:'C3.ai',r:20,b:'moon'},
+};
+
+let model = JSON.parse(JSON.stringify(DEFAULTS));
+let locked = false;   // one-time commit: returns + results reveal only after lock-in
+
+// ============================================================
+//  EMAIL SUBMISSION (Web3Forms) — PASTE YOUR ACCESS KEY BELOW
+//  1. Go to https://web3forms.com  → enter info@flowstatealpha.com → get your free Access Key
+//  2. Replace the placeholder string below with that key
+//  3. Host this file on GitHub Pages (email can't send from the file:// or the Claude preview)
+//  Submissions email to whatever address the key is registered to (info@flowstatealpha.com).
+// ============================================================
+const WEB3FORMS_KEY = '5bdf75eb-5150-45fe-bf03-3e1bfeabd5e6';
+const emailOk = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+
+// ---------- Formatting ----------
+const fmt = n => '$'+Math.round(n).toLocaleString('en-US');
+
+// ---------- Datalists ----------
+function buildDatalists(){
+  const byBucket={etf:[],blue:[],moon:[]};
+  Object.entries(RETURNS).forEach(([tk,v])=>{ if(byBucket[v.b]) byBucket[v.b].push([tk,v.n]); });
+  document.getElementById('datalists').innerHTML = Object.entries(byBucket).map(([b,list])=>
+    `<datalist id="dl-${b}">${list.map(([tk,n])=>`<option value="${tk}">${n}</option>`).join('')}</datalist>`
+  ).join('');
+}
+
+// ---------- Build holdings table ----------
+function buildTable(){
+  const wrap = document.getElementById('cats');
+  wrap.innerHTML='';
+  model.forEach((cat,ci)=>{
+    const div=document.createElement('div');
+    div.className='cat';
+    let rows='';
+    cat.rows.forEach((r,ri)=>{
+      const col=cat.pal[ri]||cat.color;
+      rows+=`<tr class="hrow">
+        <td><span class="cswatch" style="background:${col}"></span></td>
+        <td><input class="cell tick col-tick" value="${r.tick}" placeholder="—" list="dl-${cat.key}" data-c="${ci}" data-r="${ri}" data-f="tick"></td>
+        <td><input class="cell nm" value="${r.name}" placeholder="auto from ticker" data-c="${ci}" data-r="${ri}" data-f="name"></td>
+        <td><input class="cell num col-alloc" type="number" value="${r.alloc}" data-c="${ci}" data-r="${ri}" data-f="alloc"></td>
+        <td><div class="cell col-ret retcell retmask" id="ret-${ci}-${ri}" title="Hidden until you lock in">🔒</div></td>
+      </tr>`;
+    });
+    const sum=cat.rows.reduce((a,b)=>a+(+b.alloc||0),0);
+    div.innerHTML=`
+      <div class="cat-head">
+        <div class="cat-name"><span class="swatch" style="background:${cat.color}"></span>${cat.cat.replace(/\s*\(.*\)/,'')} <span style="color:var(--muted);font-weight:600">${cat.cat.match(/\((.*)\)/)[1]}</span></div>
+        <div class="cat-total" id="catsum-${ci}">${sum}%</div>
+      </div>
+      <table>
+        <thead><tr><th></th><th>Ticker</th><th>Name</th><th>Alloc %</th><th>Return %</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+    wrap.appendChild(div);
+  });
+  wrap.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input',e=>{
+      if(locked) return;
+      const c=+e.target.dataset.c, r=+e.target.dataset.r, f=e.target.dataset.f;
+      const row=model[c].rows[r];
+      if(f==='alloc') { row.alloc=parseFloat(e.target.value)||0; }
+      else if(f==='name'){ row.name=e.target.value; }
+      else if(f==='tick'){
+        row.tick=e.target.value;
+        const hit=RETURNS[e.target.value.trim().toUpperCase()];
+        row.ret = hit ? hit.r : model[c].base;   // computed silently; stays hidden until lock-in
+        if(hit){
+          const nmInput=e.target.closest('tr').querySelector('.nm');
+          if(!row.name){ row.name=hit.n; nmInput.value=hit.n; }
+        }
+      }
+      recalc();
+    });
+  });
+}
+
+// ---------- Pie chart ----------
+function polar(cx,cy,rad,ang){const a=(ang-90)*Math.PI/180;return[cx+rad*Math.cos(a),cy+rad*Math.sin(a)];}
+function arc(cx,cy,rad,a0,a1){
+  const[x0,y0]=polar(cx,cy,rad,a0),[x1,y1]=polar(cx,cy,rad,a1);
+  const large=a1-a0>180?1:0;
+  return `M ${cx} ${cy} L ${x0} ${y0} A ${rad} ${rad} 0 ${large} 1 ${x1} ${y1} Z`;
+}
+function drawPie(){
+  const pie=document.getElementById('pie'), legend=document.getElementById('legend'), hint=document.getElementById('pieHint');
+  const cx=130,cy=130,R=118;
+  const flat=[];
+  model.forEach(cat=>cat.rows.forEach((r,ri)=>flat.push({...r,color:cat.pal[ri]||cat.color})));
+  const totalAlloc=flat.reduce((a,b)=>a+(+b.alloc||0),0);
+  const total=totalAlloc||1;
+  let ang=0, paths='';
+  flat.forEach(s=>{
+    const slice=(s.alloc/total)*360;
+    if(slice>0) paths+=`<path d="${arc(cx,cy,R,ang,ang+slice)}" fill="${s.color}" stroke="#0b1220" stroke-width="1.5"/>`;
+    ang+=slice;
+  });
+  if(totalAlloc<=0){
+    paths+=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#1e2b45" stroke-width="1.5" stroke-dasharray="4 5"/>`;
+  }
+  paths+=`<circle cx="${cx}" cy="${cy}" r="66" fill="#0e1626" stroke="#1e2b45" stroke-width="1"/>`;
+  if(locked){
+    paths+=`<text x="${cx}" y="${cy-6}" text-anchor="middle" class="center-v">${blendedReturn().toFixed(1)}%</text>`;
+    paths+=`<text x="${cx}" y="${cy+14}" text-anchor="middle" class="center-r">blended return</text>`;
+  }else{
+    paths+=`<text x="${cx}" y="${cy+2}" text-anchor="middle" class="center-lock">🔒</text>`;
+    paths+=`<text x="${cx}" y="${cy+24}" text-anchor="middle" class="center-r">return hidden</text>`;
+  }
+  pie.innerHTML=paths;
+
+  const filled=flat.filter(s=>(+s.alloc||0)>0);
+  legend.innerHTML=filled.map(s=>`<div class="leg">
+    <span class="cswatch" style="background:${s.color}"></span>
+    <span class="lt">${s.tick||'—'}</span><span class="lp">${(s.alloc/total*100).toFixed(0)}%</span></div>`).join('');
+  hint.style.display = (!locked && !flat.some(s=>s.tick)) ? 'block' : 'none';
+}
+
+// ---------- Math ----------
+function blendedReturn(){
+  let wsum=0, alloc=0;
+  model.forEach(cat=>cat.rows.forEach(r=>{wsum+=(+r.alloc||0)*(+r.ret||0); alloc+=(+r.alloc||0);}));
+  return alloc? wsum/alloc : 0;
+}
+function project(annual,years,start,rPct){
+  const r=rPct/100;
+  let v=start; const series=[v];
+  for(let y=1;y<=years;y++){ v=v*(1+r)+annual; series.push(v); }
+  const deposited=start+annual*years;
+  return {final:v, deposited, growth:v-deposited, series};
+}
+function totalAlloc(){let t=0;model.forEach(c=>c.rows.forEach(r=>t+=(+r.alloc||0)));return t;}
+
+// ---------- Line chart ----------
+function drawChart(sA,sB,startAge){
+  const svg=document.getElementById('chart');
+  if(!locked){
+    svg.innerHTML=`<foreignObject x="0" y="0" width="900" height="340">
+      <div xmlns="http://www.w3.org/1999/xhtml" class="chart-holdmsg"><span style="font-size:22px">🔒</span> Your growth projection reveals after you lock in your portfolio.</div>
+    </foreignObject>`;
+    return;
+  }
+  const W=900,H=340,pl=64,pr=20,pt=20,pb=40;
+  const n=sA.series.length;
+  const maxV=Math.max(...sA.series,...sB.series,1);
+  const x=i=>pl+(W-pl-pr)*(i/(n-1));
+  const y=v=>H-pb-(H-pt-pb)*(v/maxV);
+  const line=s=>s.series.map((v,i)=>`${i?'L':'M'} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+  const area=s=>`${line(s)} L ${x(n-1)} ${H-pb} L ${x(0)} ${H-pb} Z`;
+  let g='';
+  for(let k=0;k<=4;k++){
+    const val=maxV*k/4, yy=y(val);
+    g+=`<line x1="${pl}" y1="${yy}" x2="${W-pr}" y2="${yy}" stroke="#1e2b45" stroke-width="1"/>`;
+    g+=`<text x="${pl-8}" y="${yy+4}" text-anchor="end" font-size="11" fill="#93a3c4">${fmt(val)}</text>`;
+  }
+  let xl='';
+  const step=Math.ceil(n/8);
+  for(let i=0;i<n;i+=step){
+    xl+=`<text x="${x(i)}" y="${H-pb+22}" text-anchor="middle" font-size="11" fill="#93a3c4">${startAge+i}</text>`;
+  }
+  xl+=`<text x="${(pl+W-pr)/2}" y="${H-4}" text-anchor="middle" font-size="11" fill="#93a3c4">Age</text>`;
+  svg.innerHTML=`${g}
+    <path d="${area(sB)}" fill="rgba(34,197,94,.12)"/>
+    <path d="${area(sA)}" fill="rgba(59,130,246,.12)"/>
+    <path d="${line(sB)}" fill="none" stroke="#22c55e" stroke-width="2.5"/>
+    <path d="${line(sA)}" fill="none" stroke="#3b82f6" stroke-width="2.5"/>
+    ${xl}
+    <circle cx="${x(n-1)}" cy="${y(sB.series[n-1])}" r="4" fill="#22c55e"/>
+    <circle cx="${x(n-1)}" cy="${y(sA.series[n-1])}" r="4" fill="#3b82f6"/>`;
+}
+
+// ---------- Recalc everything ----------
+function recalc(){
+  const startAge=+document.getElementById('startAge').value||16;
+  const retireAge=+document.getElementById('retireAge').value||45;
+  const years=Math.max(0,retireAge-startAge);
+  const start=+document.getElementById('startDeposit').value||0;
+  const depA=+document.getElementById('depA').value||0;
+  const depB=+document.getElementById('depB').value||0;
+  document.getElementById('horizon').textContent=years;
+
+  let grand=0;
+  model.forEach((cat,ci)=>{
+    const sum=cat.rows.reduce((a,b)=>a+(+b.alloc||0),0);
+    grand+=sum;
+    const el=document.getElementById('catsum-'+ci);
+    if(el){el.textContent=sum+'%'; el.className='cat-total '+(sum>0?(Math.abs(sum-catTarget(cat))<0.01?'ok':'bad'):'');}
+  });
+  const gEl=document.getElementById('grandAlloc');
+  gEl.innerHTML=`<b style="color:${grand===0?'var(--muted)':(Math.abs(grand-100)<0.01?'var(--green)':'#f87171')}">${grand}%</b>`;
+  const rBlend=blendedReturn();
+  document.getElementById('blendRet').innerHTML = locked ? `<b>${rBlend.toFixed(1)}%</b>` : `<b>🔒</b>`;
+
+  const A=project(depA,years,start,rBlend);
+  const B=project(depB,years,start,rBlend);
+  document.getElementById('retLabel').textContent=`— age ${startAge} → ${retireAge} (${years} yrs)`;
+  document.getElementById('tagA').textContent=depA.toLocaleString();
+  document.getElementById('tagB').textContent=depB.toLocaleString();
+  document.getElementById('llA').textContent=depA.toLocaleString();
+  document.getElementById('llB').textContent=depB.toLocaleString();
+
+  const H='<span class="hid">🔒</span>';
+  document.getElementById('depTotA').innerHTML = locked ? fmt(A.deposited) : H;
+  document.getElementById('growA').innerHTML   = locked ? fmt(A.growth)    : H;
+  document.getElementById('finA').innerHTML    = locked ? fmt(A.final)     : H;
+  document.getElementById('depTotB').innerHTML = locked ? fmt(B.deposited) : H;
+  document.getElementById('growB').innerHTML   = locked ? fmt(B.growth)    : H;
+  document.getElementById('finB').innerHTML    = locked ? fmt(B.final)     : H;
+  const diff=B.final-A.final;
+  document.getElementById('deltaMsg').innerHTML = locked
+    ? `Doubling the yearly deposit adds <b>${fmt(diff)}</b> by age ${retireAge} — a final nest egg of <b>${fmt(B.final)}</b> vs ${fmt(A.final)}.`
+    : `🔒 Lock in your portfolio to reveal your total growth and final value.`;
+
+  drawPie();
+  drawChart(A,B,startAge);
+}
+function catTarget(cat){const m=cat.cat.match(/\((\d+)%\)/);return m?+m[1]:100;}
+
+// ---------- Build a plain-text summary of the portfolio for the email ----------
+function buildSubmissionText(email){
+  const g=id=>+document.getElementById(id).value||0;
+  const startAge=g('startAge')||16, retireAge=g('retireAge')||45;
+  const years=Math.max(0,retireAge-startAge);
+  const start=g('startDeposit'), depA=g('depA'), depB=g('depB');
+  const r=blendedReturn();
+  const A=project(depA,years,start,r), B=project(depB,years,start,r);
+  const lines=[];
+  model.forEach(cat=>{
+    lines.push(cat.cat);
+    cat.rows.forEach(row=>lines.push(`   ${row.tick.padEnd(6)} ${(row.name||'').padEnd(24)} ${row.alloc}%  |  ${row.ret}% est. return`));
+  });
+  return [
+    `Student email: ${email}`,
+    `Starting age ${startAge} → retire ${retireAge} (${years} yrs), starting deposit ${fmt(start)}`,
+    `Blended expected return: ${r.toFixed(1)}%`,
+    '',
+    'HOLDINGS',
+    ...lines,
+    '',
+    `Plan A ($${depA.toLocaleString()}/yr):  deposited ${fmt(A.deposited)}  |  growth ${fmt(A.growth)}  |  final ${fmt(A.final)}`,
+    `Plan B ($${depB.toLocaleString()}/yr):  deposited ${fmt(B.deposited)}  |  growth ${fmt(B.growth)}  |  final ${fmt(B.final)}`,
+  ].join('\n');
+}
+
+// ---------- Send to FlowState Alpha via Web3Forms ----------
+async function sendSubmission(email){
+  const res=await fetch('https://api.web3forms.com/submit',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Accept':'application/json'},
+    body:JSON.stringify({
+      access_key: WEB3FORMS_KEY,
+      subject: 'New Student Portfolio — '+email,
+      from_name: 'FlowState Portfolio Builder',
+      replyto: email,
+      student_email: email,
+      portfolio: buildSubmissionText(email)
+    })
+  });
+  const data=await res.json().catch(()=>({}));
+  return res.ok && data.success;
+}
+
+// ---------- Lock-in (one-time commit + submit) ----------
+async function lockPortfolio(){
+  const msg=document.getElementById('lockMsg');
+  const email=document.getElementById('studentEmail').value.trim();
+  const grand=totalAlloc();
+  let missing=0;
+  model.forEach(c=>c.rows.forEach(r=>{ if(!r.tick.trim()) missing++; }));
+  if(missing){
+    msg.className='lockmsg warn';
+    msg.textContent=`⚠️ Pick a ticker for all 10 holdings first — ${missing} still empty.`;
+    return;
+  }
+  if(Math.abs(grand-100)>0.01){
+    msg.className='lockmsg warn';
+    msg.textContent=`⚠️ Your allocations total ${grand}% — adjust them to 100% before locking in.`;
+    return;
+  }
+  if(!emailOk(email)){
+    msg.className='lockmsg warn';
+    msg.textContent='⚠️ Enter a valid email so we know whose portfolio this is.';
+    document.getElementById('studentEmail').focus();
+    return;
+  }
+  if(!confirm("Lock in and submit your portfolio?\n\nYour returns and projection will be revealed, your portfolio will be emailed to FlowState Alpha, and you will NOT be able to make any changes afterward.")) return;
+
+  locked=true;
+  // freeze every input
+  document.querySelectorAll('#cats input, #startAge, #studentEmail').forEach(i=>i.disabled=true);
+  // reveal each return
+  model.forEach((c,ci)=>c.rows.forEach((r,ri)=>{
+    const el=document.getElementById(`ret-${ci}-${ri}`);
+    if(el){ el.textContent=r.ret; el.classList.remove('retmask'); el.classList.add('revealed','num'); }
+  }));
+  // swap buttons
+  document.getElementById('btnRow').innerHTML =
+    '<button class="btn done" disabled>✓ Portfolio locked in</button>'+
+    '<button class="btn primary" onclick="window.print()">🖨 Print / Save PDF</button>';
+  recalc();
+
+  // submit
+  if(WEB3FORMS_KEY.includes('YOUR-')){
+    msg.className='lockmsg ok';
+    msg.innerHTML='✓ Locked in. <span style="color:var(--muted)">(Email sending isn\'t configured yet — use Print / Save PDF to submit.)</span>';
+    return;
+  }
+  msg.className='lockmsg sending';
+  msg.textContent='✓ Locked in — sending your portfolio to FlowState Alpha…';
+  try{
+    const ok=await sendSubmission(email);
+    if(ok){
+      msg.className='lockmsg ok';
+      msg.textContent='✓ Locked in and submitted to FlowState Alpha. You\'re done! (You can also print a copy.)';
+    }else{
+      throw new Error('send failed');
+    }
+  }catch(e){
+    msg.className='lockmsg warn';
+    msg.innerHTML='✓ Locked in, but the email didn\'t send (need to be online on the hosted site). Please use <b>Print / Save PDF</b> to submit instead.';
+  }
+}
+
+function resetAll(){
+  if(locked) return;
+  model=JSON.parse(JSON.stringify(DEFAULTS));
+  document.getElementById('startAge').value=16;
+  document.getElementById('studentEmail').value='';
+  document.getElementById('lockMsg').textContent='';
+  buildTable(); recalc();
+}
+
+['startAge','retireAge','startDeposit','depA','depB'].forEach(id=>
+  document.getElementById(id).addEventListener('input',()=>{ if(!locked) recalc(); }));
+
+buildDatalists();
+buildTable();
+recalc();
+</script>
+</body>
+</html>
