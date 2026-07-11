@@ -276,6 +276,10 @@ let locked = false;   // one-time commit: returns + results reveal only after lo
 //  Submissions email to whatever address the key is registered to (info@flowstatealpha.com).
 // ============================================================
 const WEB3FORMS_KEY = '5bdf75eb-5150-45fe-bf03-3e1bfeabd5e6';
+// Optional: free imgbb key so the email includes a LINK to a snapshot image of the portfolio.
+//   1. Sign up at https://imgbb.com  →  https://api.imgbb.com  →  "Get API Key"
+//   2. Paste it below. Leave the placeholder to send text-only (no chart image link).
+const IMGBB_KEY = 'YOUR-IMGBB-API-KEY';
 const emailOk = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 
 // ---------- Formatting ----------
@@ -507,8 +511,89 @@ function buildSubmissionText(email){
   ].join('\n');
 }
 
+// ---------- Render a snapshot image of the portfolio (pie + returns + projection + chart) ----------
+function rr(x,X,Y,w,h,rad){x.beginPath();x.moveTo(X+rad,Y);x.arcTo(X+w,Y,X+w,Y+h,rad);x.arcTo(X+w,Y+h,X,Y+h,rad);x.arcTo(X,Y+h,X,Y,rad);x.arcTo(X,Y,X+w,Y,rad);x.closePath();}
+function makeReportCanvas(email){
+  const gv=id=>+document.getElementById(id).value||0;
+  const startAge=gv('startAge')||16, retireAge=gv('retireAge')||45, years=Math.max(0,retireAge-startAge);
+  const start=gv('startDeposit'), depA=gv('depA'), depB=gv('depB');
+  const r=blendedReturn();
+  const A=project(depA,years,start,r), B=project(depB,years,start,r);
+  const flat=[]; model.forEach(cat=>cat.rows.forEach((row,ri)=>flat.push({...row,color:cat.pal[ri]||cat.color})));
+
+  const W=920,H=1180, c=document.createElement('canvas'); c.width=W; c.height=H;
+  const x=c.getContext('2d'); x.textBaseline='alphabetic';
+  x.fillStyle='#0b1220'; x.fillRect(0,0,W,H);
+  // header
+  x.fillStyle='#22c55e'; x.beginPath(); x.arc(46,48,7,0,7); x.fill();
+  x.fillStyle='#e8eefc'; x.font='bold 30px "Segoe UI",Arial'; x.fillText('FlowState Student Portfolio',62,58);
+  x.fillStyle='#93a3c4'; x.font='15px "Segoe UI",Arial';
+  x.fillText(`${email}   ·   age ${startAge} → ${retireAge} (${years} yrs)   ·   start ${fmt(start)}   ·   blended return ${r.toFixed(1)}%`,62,86);
+  x.strokeStyle='#1e2b45'; x.lineWidth=1; x.beginPath(); x.moveTo(40,104); x.lineTo(W-40,104); x.stroke();
+  // pie
+  const cx=210, cy=300, R=130, totalAlloc=flat.reduce((a,b)=>a+(+b.alloc||0),0)||1;
+  let ang=-Math.PI/2;
+  flat.forEach(s=>{ const a2=ang+(s.alloc/totalAlloc)*Math.PI*2;
+    x.beginPath(); x.moveTo(cx,cy); x.arc(cx,cy,R,ang,a2); x.closePath();
+    x.fillStyle=s.color; x.fill(); x.strokeStyle='#0b1220'; x.lineWidth=2; x.stroke(); ang=a2; });
+  x.beginPath(); x.arc(cx,cy,72,0,Math.PI*2); x.fillStyle='#0e1626'; x.fill(); x.strokeStyle='#1e2b45'; x.lineWidth=1; x.stroke();
+  x.fillStyle='#e8eefc'; x.font='bold 26px "Segoe UI",Arial'; x.textAlign='center'; x.fillText(r.toFixed(1)+'%',cx,cy);
+  x.fillStyle='#93a3c4'; x.font='12px "Segoe UI",Arial'; x.fillText('blended return',cx,cy+20); x.textAlign='left';
+  // legend (with revealed returns)
+  let ly=158; const lx=430;
+  flat.forEach(s=>{
+    x.fillStyle=s.color; x.fillRect(lx,ly-11,12,12);
+    x.fillStyle='#e8eefc'; x.font='bold 14px "Segoe UI",Arial'; x.fillText(s.tick,lx+20,ly);
+    x.fillStyle='#93a3c4'; x.font='13px "Segoe UI",Arial';
+    let nm=(s.name||''); if(nm.length>22) nm=nm.slice(0,21)+'…'; x.fillText(nm,lx+78,ly);
+    x.fillStyle='#e8eefc'; x.textAlign='right'; x.font='13px "Segoe UI",Arial'; x.fillText(s.alloc+'%',lx+405,ly);
+    x.fillStyle='#86efac'; x.fillText(s.ret+'% ret',lx+470,ly); x.textAlign='left';
+    ly+=30;
+  });
+  // projection cards
+  x.fillStyle='#93a3c4'; x.font='bold 12px "Segoe UI",Arial'; x.fillText('PROJECTION AT RETIREMENT',40,500);
+  const card=(bx,title,accent,P)=>{
+    const bw=410,bh=132,by=515;
+    x.fillStyle='#0e1626'; rr(x,bx,by,bw,bh,12); x.fill(); x.strokeStyle=accent; x.lineWidth=1.5; rr(x,bx,by,bw,bh,12); x.stroke();
+    x.fillStyle=accent; x.font='bold 13px "Segoe UI",Arial'; x.textAlign='left'; x.fillText(title,bx+16,by+28);
+    const row=(l,v,yy,big)=>{ x.fillStyle='#93a3c4'; x.font='13px "Segoe UI",Arial'; x.textAlign='left'; x.fillText(l,bx+16,yy);
+      x.fillStyle='#e8eefc'; x.font=(big?'bold 19px':'bold 13px')+' "Segoe UI",Arial'; x.textAlign='right'; x.fillText(v,bx+bw-16,yy); };
+    row('Total deposited',fmt(P.deposited),by+58); row('Total growth',fmt(P.growth),by+84); row('Final value',fmt(P.final),by+116,true);
+    x.textAlign='left';
+  };
+  card(40,`Plan A · $${depA.toLocaleString()}/yr`,'#3b82f6',A);
+  card(470,`Plan B · $${depB.toLocaleString()}/yr`,'#22c55e',B);
+  // growth chart
+  x.fillStyle='#93a3c4'; x.font='bold 12px "Segoe UI",Arial'; x.fillText('GROWTH OVER TIME',40,695);
+  const gx0=70,gx1=W-40,gy0=715,gy1=1120, n=A.series.length, maxV=Math.max(...A.series,...B.series,1);
+  const px=i=>gx0+(gx1-gx0)*(i/(n-1)), py=v=>gy1-(gy1-gy0)*(v/maxV);
+  x.strokeStyle='#1e2b45'; x.lineWidth=1; x.font='12px "Segoe UI",Arial';
+  for(let k=0;k<=4;k++){ const val=maxV*k/4, yy=py(val); x.beginPath(); x.moveTo(gx0,yy); x.lineTo(gx1,yy); x.stroke();
+    x.fillStyle='#93a3c4'; x.textAlign='right'; x.fillText(fmt(val),gx0-8,yy+4); }
+  x.textAlign='center'; const step=Math.ceil(n/8);
+  for(let i=0;i<n;i+=step){ x.fillText(startAge+i,px(i),gy1+20); }
+  const poly=(series,stroke,fill)=>{
+    x.beginPath(); series.forEach((v,i)=>{const X=px(i),Y=py(v); i?x.lineTo(X,Y):x.moveTo(X,Y);});
+    x.lineTo(px(n-1),gy1); x.lineTo(px(0),gy1); x.closePath(); x.fillStyle=fill; x.fill();
+    x.beginPath(); series.forEach((v,i)=>{const X=px(i),Y=py(v); i?x.lineTo(X,Y):x.moveTo(X,Y);}); x.strokeStyle=stroke; x.lineWidth=2.5; x.stroke();
+  };
+  poly(B.series,'#22c55e','rgba(34,197,94,.12)'); poly(A.series,'#3b82f6','rgba(59,130,246,.12)');
+  x.textAlign='left';
+  return c;
+}
+
+// ---------- Upload snapshot to imgbb, return a shareable image URL ----------
+async function uploadImage(canvas){
+  const b64 = canvas.toDataURL('image/png').split(',')[1];
+  const fd = new FormData(); fd.append('image', b64);
+  const res = await fetch('https://api.imgbb.com/1/upload?key='+IMGBB_KEY, {method:'POST', body:fd});
+  const j = await res.json().catch(()=>({}));
+  if(j && j.success && j.data && j.data.url) return j.data.url;
+  throw new Error('imgbb upload failed');
+}
+
 // ---------- Send to FlowState Alpha via Web3Forms ----------
-async function sendSubmission(email){
+async function sendSubmission(email, imageUrl){
   const res=await fetch('https://api.web3forms.com/submit',{
     method:'POST',
     headers:{'Content-Type':'application/json','Accept':'application/json'},
@@ -518,7 +603,8 @@ async function sendSubmission(email){
       from_name: 'FlowState Portfolio Builder',
       replyto: email,
       student_email: email,
-      portfolio: buildSubmissionText(email)
+      chart_image: imageUrl || '(image not available — see text below)',
+      portfolio: buildSubmissionText(email) + (imageUrl ? '\n\nView chart image: '+imageUrl : '')
     })
   });
   const data=await res.json().catch(()=>({}));
@@ -571,12 +657,20 @@ async function lockPortfolio(){
     return;
   }
   msg.className='lockmsg sending';
-  msg.textContent='✓ Locked in — sending your portfolio to FlowState Alpha…';
+  msg.textContent='✓ Locked in — building your portfolio snapshot and sending to FlowState Alpha…';
+  // Optional: render + upload a snapshot image so the email includes a visual link
+  let imageUrl='';
+  if(!IMGBB_KEY.includes('YOUR-')){
+    try{ imageUrl = await uploadImage(makeReportCanvas(email)); }
+    catch(e){ imageUrl=''; }   // image is a nice-to-have; never blocks the submission
+  }
   try{
-    const ok=await sendSubmission(email);
+    const ok=await sendSubmission(email, imageUrl);
     if(ok){
       msg.className='lockmsg ok';
-      msg.textContent='✓ Locked in and submitted to FlowState Alpha. You\'re done! (You can also print a copy.)';
+      msg.textContent = imageUrl
+        ? '✓ Locked in and submitted to FlowState Alpha — with a snapshot of your portfolio. You\'re done!'
+        : '✓ Locked in and submitted to FlowState Alpha. You\'re done! (You can also print a copy.)';
     }else{
       throw new Error('send failed');
     }
