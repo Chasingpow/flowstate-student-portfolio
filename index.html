@@ -150,7 +150,7 @@
       <h2>Portfolio Setup</h2>
       <div class="setup">
         <div class="field"><label>Starting Age</label><input id="startAge" type="number" value="16"><div class="suffix">years old</div></div>
-        <div class="field"><label>Retirement Age <span class="lock">🔒</span></label><input id="retireAge" class="locked" type="number" value="45" readonly tabindex="-1"><div class="suffix"><span id="horizon">29</span>-yr horizon</div></div>
+        <div class="field"><label>Retirement Age</label><input id="retireAge" type="number" min="1" value="45"><div class="suffix"><span id="horizon">29</span>-yr horizon</div></div>
         <div class="field"><label>Starting Deposit</label><input id="startDeposit" type="number" min="0" placeholder="e.g. 5000"><div class="suffix">one-time, to start</div></div>
         <div class="field"><label>Deposit — Plan A</label><input id="depA" type="number" min="0" placeholder="e.g. 2000"><div class="suffix">per year — realistic</div></div>
         <div class="field"><label>Deposit — Plan B</label><input id="depB" type="number" min="0" placeholder="e.g. 4000"><div class="suffix">per year — stretch goal</div></div>
@@ -726,6 +726,13 @@ async function lockPortfolio(){
     msg.textContent=`⚠️ Your allocations total ${grand}% — adjust them to 100% before locking in.`;
     return;
   }
+  const sAge=+document.getElementById('startAge').value||0;
+  const rAge=+document.getElementById('retireAge').value||0;
+  if(!(rAge>sAge)){
+    msg.className='lockmsg warn';
+    msg.textContent='⚠️ Set a retirement age higher than your starting age.';
+    return;
+  }
   const start=+document.getElementById('startDeposit').value||0;
   const dA=+document.getElementById('depA').value||0;
   const dB=+document.getElementById('depB').value||0;
@@ -747,7 +754,7 @@ async function lockPortfolio(){
 
   locked=true;
   // freeze every input
-  document.querySelectorAll('#cats input, #startAge, #startDeposit, #depA, #depB, #studentEmail').forEach(i=>i.disabled=true);
+  document.querySelectorAll('#cats input, #startAge, #retireAge, #startDeposit, #depA, #depB, #studentEmail').forEach(i=>i.disabled=true);
   // reveal each return
   model.forEach((c,ci)=>c.rows.forEach((r,ri)=>{
     const el=document.getElementById(`ret-${ci}-${ri}`);
