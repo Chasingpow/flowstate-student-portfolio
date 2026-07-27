@@ -59,6 +59,7 @@
   .cell:disabled{opacity:.85;cursor:default}
   .field input:disabled{opacity:.7;cursor:default}
   .cell.tick{font-weight:700;text-transform:uppercase}
+  .cell.tick.unknown{border-color:#fbbf24;background:rgba(251,191,36,.10)}
   .cell.num{text-align:right;font-variant-numeric:tabular-nums}
   .col-alloc,.col-ret{width:78px}
   .col-tick{width:72px}
@@ -370,6 +371,7 @@ function buildTable(){
           const nmInput=e.target.closest('tr').querySelector('.nm');
           if(!row.name){ row.name=hit.n; nmInput.value=hit.n; }
         }
+        markTick(e.target);
       }
       recalc();
     });
@@ -518,6 +520,19 @@ function recalc(){
 }
 function catTarget(cat){const m=cat.cat.match(/\((\d+)%\)/);return m?+m[1]:100;}
 
+// ---------- Flag a ticker the lookup doesn't recognize ----------
+function markTick(el){
+  const tk=el.value.trim().toUpperCase();
+  const bad = tk && !RETURNS[tk];
+  el.classList.toggle('unknown', bad);
+  el.title = bad ? 'Ticker not recognized — double-check the symbol (uses a default estimate)' : '';
+}
+function unknownTickers(){
+  const list=[];
+  model.forEach(cat=>cat.rows.forEach(r=>{ const t=r.tick.trim().toUpperCase(); if(t && !RETURNS[t]) list.push(r.tick.trim()); }));
+  return [...new Set(list)];
+}
+
 // ---------- Diversification Coach (live tips based on picks — never reveals returns) ----------
 function renderTips(){
   const box=document.getElementById('tips'); if(!box) return;
@@ -558,6 +573,10 @@ function renderTips(){
   blues.forEach(b=>{ if(SECTOR[b.t]==='Tech') techW+=b.a; });
   moons.forEach(m=>{ const th=THEME[m.t]; if(th==='AI/Chips'||th==='AI/Data') techW+=m.a; });
   if(techW>=45) tips.unshift({k:'warn',b:'Whole portfolio',x:`About ${Math.round(techW)}% of your money sits in tech-focused picks. Tech tends to rise together — and fall together. Balancing with other sectors or regions smooths the ride.`});
+
+  // Unrecognized tickers — most actionable, goes to the very top
+  const unk=unknownTickers();
+  if(unk.length) tips.unshift({k:'warn',b:'Check your tickers',x:`We don't recognize ${unk.join(', ')} — double-check the symbol(s). Unknown tickers use a default return estimate instead of a real one (US ETFs & large caps work best).`});
 
   box.innerHTML = tips.length
     ? tips.map(t=>`<div class="tip ${t.k}"><span class="tb">${t.b}</span>${t.x}</div>`).join('')
@@ -721,7 +740,10 @@ async function lockPortfolio(){
     document.getElementById('studentEmail').focus();
     return;
   }
-  if(!confirm("Lock in and submit your portfolio?\n\nYour returns and projection will be revealed, your portfolio will be emailed to FlowState Alpha, and you will NOT be able to make any changes afterward.")) return;
+  let confirmMsg="Lock in and submit your portfolio?\n\nYour returns and projection will be revealed, your portfolio will be emailed to FlowState Alpha, and you will NOT be able to make any changes afterward.";
+  const unk=unknownTickers();
+  if(unk.length) confirmMsg += `\n\n⚠️ Heads up: we don't recognize ${unk.join(', ')}. These will use a default return estimate — double-check the symbols first if that's a typo.`;
+  if(!confirm(confirmMsg)) return;
 
   locked=true;
   // freeze every input
