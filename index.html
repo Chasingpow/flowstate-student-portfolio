@@ -141,7 +141,7 @@
 <div class="wrap">
   <header>
     <div class="title"><span class="dot"></span>FlowState Student Portfolio Builder</div>
-    <div class="subtitle">Pick your own 4 ETFs · 3 blue chips · 3 moonshots, and enter deposit amounts that fit <b>your</b> budget. Your expected returns and final projection stay <b>hidden</b> until you lock in — and once you lock in, you can't change a thing and your portfolio is submitted to FlowState Alpha. Choose carefully: it's one and done.</div>
+    <div class="subtitle">Pick your own 4 ETFs · 3 blue chips · 3 moonshots, enter deposit amounts that fit <b>your</b> budget, and watch your expected return and 30-year growth update live. When you're happy with it, submit it to FlowState Alpha.</div>
   </header>
 
   <div class="grid">
@@ -157,7 +157,7 @@
       </div>
 
       <h2 style="margin-top:4px">Your Holdings — pick a ticker for each row</h2>
-      <div class="caption">Weights are pre-set to the 55 / 25 / 20 plan (still editable). Each holding's <b>expected return is hidden</b> 🔒 until you lock in — start typing a ticker to see suggestions.</div>
+      <div class="caption">Weights are pre-set to the 55 / 25 / 20 plan (all editable). Each holding's <b>expected return fills in automatically</b> from the ticker you pick — start typing a ticker to see suggestions.</div>
       <div id="cats"></div>
       <div id="datalists"></div>
 
@@ -167,7 +167,7 @@
       </div>
       <div class="grand" style="border-top:none;padding-top:2px">
         <span>Blended expected annual return</span>
-        <span id="blendRet"><b>🔒</b></span>
+        <span id="blendRet"><b>—</b></span>
       </div>
 
       <div class="submit-row">
@@ -177,7 +177,8 @@
 
       <div class="btns" id="btnRow">
         <button class="btn" id="resetBtn" onclick="resetAll()">↺ Start over</button>
-        <button class="btn primary" id="lockBtn" onclick="lockPortfolio()">🔒 Lock in &amp; submit</button>
+        <button class="btn" onclick="window.print()">🖨 Print / Save PDF</button>
+        <button class="btn primary" id="submitBtn" onclick="submitPortfolio()">📤 Submit to FlowState Alpha</button>
       </div>
       <div class="lockmsg" id="lockMsg"></div>
     </div>
@@ -298,7 +299,6 @@ const THEME = {NVDA:'AI/Chips',AMD:'AI/Chips',SMCI:'AI/Chips',ARM:'AI/Chips',
   IONQ:'Quantum',ASTS:'Space',RBLX:'Gaming'};
 
 let model = JSON.parse(JSON.stringify(DEFAULTS));
-let locked = false;   // one-time commit: returns + results reveal only after lock-in
 
 // ============================================================
 //  EMAIL SUBMISSION (Web3Forms) — PASTE YOUR ACCESS KEY BELOW
@@ -341,7 +341,7 @@ function buildTable(){
         <td><input class="cell tick col-tick" value="${r.tick}" placeholder="—" list="dl-${cat.key}" data-c="${ci}" data-r="${ri}" data-f="tick"></td>
         <td><input class="cell nm" value="${r.name}" placeholder="auto from ticker" data-c="${ci}" data-r="${ri}" data-f="name"></td>
         <td><input class="cell num col-alloc" type="number" value="${r.alloc}" data-c="${ci}" data-r="${ri}" data-f="alloc"></td>
-        <td><div class="cell col-ret retcell retmask" id="ret-${ci}-${ri}" title="Hidden until you lock in">🔒</div></td>
+        <td><div class="cell num col-ret retcell revealed" id="ret-${ci}-${ri}" title="Set automatically from the ticker">${r.ret}</div></td>
       </tr>`;
     });
     const sum=cat.rows.reduce((a,b)=>a+(+b.alloc||0),0);
@@ -358,7 +358,6 @@ function buildTable(){
   });
   wrap.querySelectorAll('input').forEach(inp=>{
     inp.addEventListener('input',e=>{
-      if(locked) return;
       const c=+e.target.dataset.c, r=+e.target.dataset.r, f=e.target.dataset.f;
       const row=model[c].rows[r];
       if(f==='alloc') { row.alloc=parseFloat(e.target.value)||0; }
@@ -366,9 +365,11 @@ function buildTable(){
       else if(f==='tick'){
         row.tick=e.target.value;
         const hit=RETURNS[e.target.value.trim().toUpperCase()];
-        row.ret = hit ? hit.r : model[c].base;   // computed silently; stays hidden until lock-in
+        row.ret = hit ? hit.r : model[c].base;   // auto from ticker (baseline if unknown)
+        const tr=e.target.closest('tr');
+        tr.querySelector('.col-ret').textContent = row.ret;   // show it live
         if(hit){
-          const nmInput=e.target.closest('tr').querySelector('.nm');
+          const nmInput=tr.querySelector('.nm');
           if(!row.name){ row.name=hit.n; nmInput.value=hit.n; }
         }
         markTick(e.target);
@@ -402,20 +403,15 @@ function drawPie(){
     paths+=`<circle cx="${cx}" cy="${cy}" r="${R}" fill="none" stroke="#1e2b45" stroke-width="1.5" stroke-dasharray="4 5"/>`;
   }
   paths+=`<circle cx="${cx}" cy="${cy}" r="66" fill="#0e1626" stroke="#1e2b45" stroke-width="1"/>`;
-  if(locked){
-    paths+=`<text x="${cx}" y="${cy-6}" text-anchor="middle" class="center-v">${blendedReturn().toFixed(1)}%</text>`;
-    paths+=`<text x="${cx}" y="${cy+14}" text-anchor="middle" class="center-r">blended return</text>`;
-  }else{
-    paths+=`<text x="${cx}" y="${cy+2}" text-anchor="middle" class="center-lock">🔒</text>`;
-    paths+=`<text x="${cx}" y="${cy+24}" text-anchor="middle" class="center-r">return hidden</text>`;
-  }
+  paths+=`<text x="${cx}" y="${cy-6}" text-anchor="middle" class="center-v">${blendedReturn().toFixed(1)}%</text>`;
+  paths+=`<text x="${cx}" y="${cy+14}" text-anchor="middle" class="center-r">blended return</text>`;
   pie.innerHTML=paths;
 
   const filled=flat.filter(s=>(+s.alloc||0)>0);
   legend.innerHTML=filled.map(s=>`<div class="leg">
     <span class="cswatch" style="background:${s.color}"></span>
     <span class="lt">${s.tick||'—'}</span><span class="lp">${(s.alloc/total*100).toFixed(0)}%</span></div>`).join('');
-  hint.style.display = (!locked && !flat.some(s=>s.tick)) ? 'block' : 'none';
+  hint.style.display = (!flat.some(s=>s.tick)) ? 'block' : 'none';
 }
 
 // ---------- Math ----------
@@ -436,12 +432,6 @@ function totalAlloc(){let t=0;model.forEach(c=>c.rows.forEach(r=>t+=(+r.alloc||0
 // ---------- Line chart ----------
 function drawChart(sA,sB,startAge){
   const svg=document.getElementById('chart');
-  if(!locked){
-    svg.innerHTML=`<foreignObject x="0" y="0" width="900" height="340">
-      <div xmlns="http://www.w3.org/1999/xhtml" class="chart-holdmsg"><span style="font-size:22px">🔒</span> Your growth projection reveals after you lock in your portfolio.</div>
-    </foreignObject>`;
-    return;
-  }
   const W=900,H=340,pl=64,pr=20,pt=20,pb=40;
   const n=sA.series.length;
   const maxV=Math.max(...sA.series,...sB.series,1);
@@ -491,7 +481,7 @@ function recalc(){
   const gEl=document.getElementById('grandAlloc');
   gEl.innerHTML=`<b style="color:${grand===0?'var(--muted)':(Math.abs(grand-100)<0.01?'var(--green)':'#f87171')}">${grand}%</b>`;
   const rBlend=blendedReturn();
-  document.getElementById('blendRet').innerHTML = locked ? `<b>${rBlend.toFixed(1)}%</b>` : `<b>🔒</b>`;
+  document.getElementById('blendRet').innerHTML = `<b>${rBlend.toFixed(1)}%</b>`;
 
   const A=project(depA,years,start,rBlend);
   const B=project(depB,years,start,rBlend);
@@ -502,17 +492,15 @@ function recalc(){
   document.getElementById('llA').textContent=dep(depA);
   document.getElementById('llB').textContent=dep(depB);
 
-  const H='<span class="hid">🔒</span>';
-  document.getElementById('depTotA').innerHTML = locked ? fmt(A.deposited) : H;
-  document.getElementById('growA').innerHTML   = locked ? fmt(A.growth)    : H;
-  document.getElementById('finA').innerHTML    = locked ? fmt(A.final)     : H;
-  document.getElementById('depTotB').innerHTML = locked ? fmt(B.deposited) : H;
-  document.getElementById('growB').innerHTML   = locked ? fmt(B.growth)    : H;
-  document.getElementById('finB').innerHTML    = locked ? fmt(B.final)     : H;
+  document.getElementById('depTotA').innerHTML = fmt(A.deposited);
+  document.getElementById('growA').innerHTML   = fmt(A.growth);
+  document.getElementById('finA').innerHTML    = fmt(A.final);
+  document.getElementById('depTotB').innerHTML = fmt(B.deposited);
+  document.getElementById('growB').innerHTML   = fmt(B.growth);
+  document.getElementById('finB').innerHTML    = fmt(B.final);
   const diff=B.final-A.final;
-  document.getElementById('deltaMsg').innerHTML = locked
-    ? `Doubling the yearly deposit adds <b>${fmt(diff)}</b> by age ${retireAge} — a final nest egg of <b>${fmt(B.final)}</b> vs ${fmt(A.final)}.`
-    : `🔒 Lock in your portfolio to reveal your total growth and final value.`;
+  document.getElementById('deltaMsg').innerHTML =
+    `Doubling the yearly deposit adds <b>${fmt(diff)}</b> by age ${retireAge} — a final nest egg of <b>${fmt(B.final)}</b> vs ${fmt(A.final)}.`;
 
   drawPie();
   drawChart(A,B,startAge);
@@ -709,8 +697,8 @@ async function sendSubmission(email, imageUrl){
   return res.ok && data.success;
 }
 
-// ---------- Lock-in (one-time commit + submit) ----------
-async function lockPortfolio(){
+// ---------- Submit to FlowState Alpha (no lock — students can keep editing) ----------
+async function submitPortfolio(){
   const msg=document.getElementById('lockMsg');
   const email=document.getElementById('studentEmail').value.trim();
   const grand=totalAlloc();
@@ -723,7 +711,7 @@ async function lockPortfolio(){
   }
   if(Math.abs(grand-100)>0.01){
     msg.className='lockmsg warn';
-    msg.textContent=`⚠️ Your allocations total ${grand}% — adjust them to 100% before locking in.`;
+    msg.textContent=`⚠️ Your allocations total ${grand}% — adjust them to 100% before submitting.`;
     return;
   }
   const sAge=+document.getElementById('startAge').value||0;
@@ -738,7 +726,7 @@ async function lockPortfolio(){
   const dB=+document.getElementById('depB').value||0;
   if(start<=0 || dA<=0 || dB<=0){
     msg.className='lockmsg warn';
-    msg.textContent='⚠️ Enter your starting deposit and both yearly amounts (Plan A and Plan B) before locking in.';
+    msg.textContent='⚠️ Enter your starting deposit and both yearly amounts (Plan A and Plan B) before submitting.';
     return;
   }
   if(!emailOk(email)){
@@ -747,33 +735,20 @@ async function lockPortfolio(){
     document.getElementById('studentEmail').focus();
     return;
   }
-  let confirmMsg="Lock in and submit your portfolio?\n\nYour returns and projection will be revealed, your portfolio will be emailed to FlowState Alpha, and you will NOT be able to make any changes afterward.";
+  let confirmMsg="Submit your portfolio to FlowState Alpha?\n\nIt will be emailed with your email and holdings. You can still make changes and submit again if you need to.";
   const unk=unknownTickers();
-  if(unk.length) confirmMsg += `\n\n⚠️ Heads up: we don't recognize ${unk.join(', ')}. These will use a default return estimate — double-check the symbols first if that's a typo.`;
+  if(unk.length) confirmMsg += `\n\n⚠️ Heads up: we don't recognize ${unk.join(', ')}. These use a default return estimate — double-check the symbols first if that's a typo.`;
   if(!confirm(confirmMsg)) return;
 
-  locked=true;
-  // freeze every input
-  document.querySelectorAll('#cats input, #startAge, #retireAge, #startDeposit, #depA, #depB, #studentEmail').forEach(i=>i.disabled=true);
-  // reveal each return
-  model.forEach((c,ci)=>c.rows.forEach((r,ri)=>{
-    const el=document.getElementById(`ret-${ci}-${ri}`);
-    if(el){ el.textContent=r.ret; el.classList.remove('retmask'); el.classList.add('revealed','num'); }
-  }));
-  // swap buttons
-  document.getElementById('btnRow').innerHTML =
-    '<button class="btn done" disabled>✓ Portfolio locked in</button>'+
-    '<button class="btn primary" onclick="window.print()">🖨 Print / Save PDF</button>';
-  recalc();
-
-  // submit
+  const btn=document.getElementById('submitBtn');
   if(WEB3FORMS_KEY.includes('YOUR-')){
     msg.className='lockmsg ok';
-    msg.innerHTML='✓ Locked in. <span style="color:var(--muted)">(Email sending isn\'t configured yet — use Print / Save PDF to submit.)</span>';
+    msg.innerHTML='<span style="color:var(--muted)">Email sending isn\'t configured yet — use Print / Save PDF to submit.</span>';
     return;
   }
+  btn.disabled=true;
   msg.className='lockmsg sending';
-  msg.textContent='✓ Locked in — building your portfolio snapshot and sending to FlowState Alpha…';
+  msg.textContent='Building your portfolio snapshot and sending to FlowState Alpha…';
   // Optional: render + upload a snapshot image so the email includes a visual link
   let imageUrl='';
   if(!IMGBB_KEY.includes('YOUR-')){
@@ -785,28 +760,30 @@ async function lockPortfolio(){
     if(ok){
       msg.className='lockmsg ok';
       msg.textContent = imageUrl
-        ? '✓ Locked in and submitted to FlowState Alpha — with a snapshot of your portfolio. You\'re done!'
-        : '✓ Locked in and submitted to FlowState Alpha. You\'re done! (You can also print a copy.)';
+        ? '✓ Submitted to FlowState Alpha — with a snapshot of your portfolio!'
+        : '✓ Submitted to FlowState Alpha! (You can also print a copy.)';
     }else{
       throw new Error('send failed');
     }
   }catch(e){
     msg.className='lockmsg warn';
-    msg.innerHTML='✓ Locked in, but the email didn\'t send (need to be online on the hosted site). Please use <b>Print / Save PDF</b> to submit instead.';
+    msg.innerHTML='Couldn\'t send the email (you need to be online on the hosted site). Please use <b>Print / Save PDF</b> instead.';
+  }finally{
+    btn.disabled=false;
   }
 }
 
 function resetAll(){
-  if(locked) return;
   model=JSON.parse(JSON.stringify(DEFAULTS));
   document.getElementById('startAge').value=16;
+  document.getElementById('retireAge').value=45;
   ['startDeposit','depA','depB','studentEmail'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('lockMsg').textContent='';
   buildTable(); recalc();
 }
 
 ['startAge','retireAge','startDeposit','depA','depB'].forEach(id=>
-  document.getElementById(id).addEventListener('input',()=>{ if(!locked) recalc(); }));
+  document.getElementById(id).addEventListener('input',recalc));
 
 buildDatalists();
 buildTable();
