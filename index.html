@@ -81,6 +81,15 @@
   .center-lock{font-size:30px}
   .pie-hint{font-size:12px;color:var(--muted);text-align:center;margin-top:10px;max-width:230px}
 
+  /* Diversification coach */
+  .coach h2{margin-top:20px}
+  .tips{display:flex;flex-direction:column;gap:8px}
+  .tip{font-size:12.5px;line-height:1.45;padding:9px 11px;border-radius:9px;border-left:3px solid var(--line);background:var(--panel2);color:#cdd7ee}
+  .tip .tb{font-weight:700;text-transform:uppercase;letter-spacing:.4px;font-size:9.5px;color:var(--muted);display:block;margin-bottom:2px}
+  .tip.warn{border-left-color:#fbbf24}
+  .tip.info{border-left-color:#60a5fa}
+  .tip.good{border-left-color:#22c55e}
+
   /* Scenario cards */
   .scenarios{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px}
   @media(max-width:560px){.scenarios{grid-template-columns:1fr}}
@@ -180,6 +189,10 @@
         <div class="pie-legend" id="legend"></div>
         <div class="pie-hint" id="pieHint">ETFs shade green · blue chips blue · moonshots yellow. Pick tickers to name your slices.</div>
       </div>
+      <div class="coach">
+        <h2>💡 Diversification Coach</h2>
+        <div class="tips" id="tips"></div>
+      </div>
     </div>
   </div>
 
@@ -264,6 +277,24 @@ const RETURNS = {
   DKNG:{n:'DraftKings',r:18,b:'moon'}, UPST:{n:'Upstart',r:20,b:'moon'}, IONQ:{n:'IonQ',r:24,b:'moon'},
   ASTS:{n:'AST SpaceMobile',r:25,b:'moon'}, AI:{n:'C3.ai',r:20,b:'moon'},
 };
+
+// ---------- Sector / theme tags for the Diversification Coach ----------
+const ETF_BROAD_US = new Set(['VOO','VTI','SPY','IVV','DIA']);
+const ETF_TECH     = new Set(['QQQ','QQQM','VGT','VUG','SCHG','SOXX','SMH','ARKK']);
+const ETF_INTL     = new Set(['VXUS','VEA','VWO']);
+const ETF_DIV      = new Set(['SCHD','VYM','DGRO','VIG']);
+const MEGA         = new Set(['AAPL','MSFT','NVDA','AMZN','GOOGL','GOOG','META','AVGO']);
+const SECTOR = {AAPL:'Tech',MSFT:'Tech',GOOGL:'Tech',GOOG:'Tech',AMZN:'Tech',META:'Tech',AVGO:'Tech',
+  V:'Financials',MA:'Financials',JPM:'Financials',
+  JNJ:'Healthcare',UNH:'Healthcare',LLY:'Healthcare',
+  KO:'Consumer',PEP:'Consumer',PG:'Consumer',WMT:'Consumer',HD:'Consumer',MCD:'Consumer',COST:'Consumer',NKE:'Consumer',DIS:'Consumer',
+  XOM:'Energy',CVX:'Energy', CAT:'Industrials',HON:'Industrials'};
+const THEME = {NVDA:'AI/Chips',AMD:'AI/Chips',SMCI:'AI/Chips',ARM:'AI/Chips',
+  PLTR:'AI/Data',AI:'AI/Data',SNOW:'AI/Data',CRWD:'AI/Data',NET:'AI/Data',
+  COIN:'Crypto',MSTR:'Crypto',MARA:'Crypto',RIOT:'Crypto',
+  TSLA:'EV',RIVN:'EV',LCID:'EV',
+  SOFI:'Fintech',HOOD:'Fintech',UPST:'Fintech',DKNG:'Fintech',
+  IONQ:'Quantum',ASTS:'Space',RBLX:'Gaming'};
 
 let model = JSON.parse(JSON.stringify(DEFAULTS));
 let locked = false;   // one-time commit: returns + results reveal only after lock-in
@@ -483,8 +514,55 @@ function recalc(){
 
   drawPie();
   drawChart(A,B,startAge);
+  renderTips();
 }
 function catTarget(cat){const m=cat.cat.match(/\((\d+)%\)/);return m?+m[1]:100;}
+
+// ---------- Diversification Coach (live tips based on picks — never reveals returns) ----------
+function renderTips(){
+  const box=document.getElementById('tips'); if(!box) return;
+  const picks=model.map(cat=>cat.rows.filter(r=>r.tick.trim()).map(r=>({t:r.tick.trim().toUpperCase(), a:+r.alloc||0})));
+  const etfs=picks[0], blues=picks[1], moons=picks[2];
+  const tips=[];
+
+  // ETFs
+  const etfSet=[...new Set(etfs.map(e=>e.t))];
+  const broad=etfSet.filter(t=>ETF_BROAD_US.has(t));
+  const techEtf=etfSet.filter(t=>ETF_TECH.has(t));
+  if(broad.length>=2) tips.push({k:'warn',b:'ETFs',x:`${broad.join(' & ')} overlap heavily — they hold almost the same US stocks. Swap one for international (VXUS) or small-cap for real variety.`});
+  if(techEtf.length>=2) tips.push({k:'warn',b:'ETFs',x:`${techEtf.join(', ')} are all tech/growth funds. Pair them with a broad-market (VOO) or dividend (SCHD) fund to balance.`});
+  if(etfs.length>=2 && !etfSet.some(t=>ETF_INTL.has(t))) tips.push({k:'info',b:'ETFs',x:`No international fund yet — adding VXUS or VEA spreads your money beyond the US.`});
+  if(etfs.length>=3 && broad.length<=1 && techEtf.length<=1 && etfSet.some(t=>ETF_INTL.has(t)||ETF_DIV.has(t))) tips.push({k:'good',b:'ETFs',x:`Nice — your ETF core blends different slices of the market.`});
+
+  // Blue chips
+  const bSectors=blues.map(b=>SECTOR[b.t]||'Other');
+  const techB=bSectors.filter(s=>s==='Tech').length;
+  if(blues.length>=2 && techB===blues.length) tips.push({k:'warn',b:'Blue chips',x:`All your blue chips are tech companies. This is your chance to branch out — healthcare (JNJ, LLY), consumer (COST, KO) or finance (JPM, V).`});
+  const dupEtf=blues.filter(b=>MEGA.has(b.t) && (techEtf.length||broad.length)).map(b=>b.t);
+  if(dupEtf.length) tips.push({k:'info',b:'Blue chips',x:`You already own ${[...new Set(dupEtf)].join(', ')} inside your ETFs (they're top holdings of funds like QQQ & VOO) — buying them again doubles down on a few companies.`});
+  const distinctSec=new Set(bSectors.filter(s=>s!=='Other'));
+  if(blues.length===3 && distinctSec.size>=3) tips.push({k:'good',b:'Blue chips',x:`Great — three different sectors (${[...distinctSec].join(', ')}). That's real diversification.`});
+
+  // Moonshots
+  const mThemes=moons.map(m=>THEME[m.t]||'Other');
+  const counts={}; mThemes.forEach(t=>{ if(t!=='Other') counts[t]=(counts[t]||0)+1; });
+  const dupTheme=Object.keys(counts).filter(t=>counts[t]>=2);
+  if(dupTheme.length) tips.push({k:'warn',b:'Moonshots',x:`Two or more moonshots are ${dupTheme.join(' & ')} plays — same-theme bets rise and crash together. Spread across themes (AI, space, fintech, EV).`});
+  if(moons.length>=1) tips.push({k:'info',b:'Moonshots',x:`Moonshots are high-risk by design — expect some to flop. That's exactly why they're only 20% of the plan.`});
+  const distinctTheme=new Set(mThemes.filter(t=>t!=='Other'));
+  if(moons.length===3 && distinctTheme.size===3) tips.push({k:'good',b:'Moonshots',x:`Good spread — three different moonshot themes.`});
+
+  // Whole-portfolio tech load (composition only, not returns)
+  let techW=0;
+  etfs.forEach(e=>{ if(ETF_TECH.has(e.t)) techW+=e.a; });
+  blues.forEach(b=>{ if(SECTOR[b.t]==='Tech') techW+=b.a; });
+  moons.forEach(m=>{ const th=THEME[m.t]; if(th==='AI/Chips'||th==='AI/Data') techW+=m.a; });
+  if(techW>=45) tips.unshift({k:'warn',b:'Whole portfolio',x:`About ${Math.round(techW)}% of your money sits in tech-focused picks. Tech tends to rise together — and fall together. Balancing with other sectors or regions smooths the ride.`});
+
+  box.innerHTML = tips.length
+    ? tips.map(t=>`<div class="tip ${t.k}"><span class="tb">${t.b}</span>${t.x}</div>`).join('')
+    : '<div class="tip info"><span class="tb">Getting started</span>Pick your tickers and I\'ll give you live diversification tips right here.</div>';
+}
 
 // ---------- Build a plain-text summary of the portfolio for the email ----------
 function buildSubmissionText(email){
