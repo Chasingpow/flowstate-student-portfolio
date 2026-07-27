@@ -278,25 +278,79 @@ const RETURNS = {
   RIOT:{n:'Riot Platforms',r:24,b:'moon'}, SMCI:{n:'Super Micro',r:22,b:'moon'}, ARM:{n:'Arm Holdings',r:18,b:'moon'},
   DKNG:{n:'DraftKings',r:18,b:'moon'}, UPST:{n:'Upstart',r:20,b:'moon'}, IONQ:{n:'IonQ',r:24,b:'moon'},
   ASTS:{n:'AST SpaceMobile',r:25,b:'moon'}, AI:{n:'C3.ai',r:20,b:'moon'},
+  // --- more ETFs (small-cap / value / mid / REIT / international / sector / income / commodity / bond) ---
+  AVUV:{n:'US Small-Cap Value ETF',r:10,b:'etf'}, VBR:{n:'Small-Cap Value ETF',r:10,b:'etf'}, VB:{n:'Small-Cap ETF',r:9,b:'etf'},
+  IJR:{n:'S&P SmallCap 600 ETF',r:9,b:'etf'}, VO:{n:'Mid-Cap ETF',r:9,b:'etf'}, VTV:{n:'Value ETF',r:9,b:'etf'},
+  IWF:{n:'Russell 1000 Growth ETF',r:11,b:'etf'}, IWD:{n:'Russell 1000 Value ETF',r:9,b:'etf'}, MGK:{n:'Mega-Cap Growth ETF',r:12,b:'etf'},
+  VNQ:{n:'Real Estate ETF',r:9,b:'etf'}, SCHH:{n:'REIT ETF',r:9,b:'etf'},
+  VGK:{n:'Europe ETF',r:8,b:'etf'}, EFA:{n:'Developed Markets ETF',r:8,b:'etf'}, IEFA:{n:'Core Intl ETF',r:8,b:'etf'},
+  EEM:{n:'Emerging Markets ETF',r:8,b:'etf'}, SCHF:{n:'Intl Equity ETF',r:8,b:'etf'}, INDA:{n:'India ETF',r:10,b:'etf'}, EWJ:{n:'Japan ETF',r:7,b:'etf'},
+  XLK:{n:'Technology Sector ETF',r:12,b:'etf'}, XLF:{n:'Financials Sector ETF',r:9,b:'etf'}, XLE:{n:'Energy Sector ETF',r:8,b:'etf'},
+  XLV:{n:'Healthcare Sector ETF',r:9,b:'etf'}, XLY:{n:'Consumer Disc. ETF',r:10,b:'etf'}, XLP:{n:'Consumer Staples ETF',r:8,b:'etf'},
+  XLI:{n:'Industrials Sector ETF',r:9,b:'etf'}, XLU:{n:'Utilities Sector ETF',r:7,b:'etf'},
+  JEPI:{n:'Equity Income ETF',r:8,b:'etf'}, JEPQ:{n:'Nasdaq Income ETF',r:9,b:'etf'},
+  GLD:{n:'Gold ETF',r:6,b:'etf'}, SLV:{n:'Silver ETF',r:6,b:'etf'}, TLT:{n:'Long-Term Treasury ETF',r:4,b:'etf'},
+  // --- more blue chips (US large caps + international ADRs & friendly aliases) ---
+  ORCL:{n:'Oracle',r:11,b:'blue'}, CRM:{n:'Salesforce',r:11,b:'blue'}, ADBE:{n:'Adobe',r:11,b:'blue'},
+  CSCO:{n:'Cisco',r:8,b:'blue'}, INTC:{n:'Intel',r:7,b:'blue'}, IBM:{n:'IBM',r:7,b:'blue'},
+  QCOM:{n:'Qualcomm',r:10,b:'blue'}, TXN:{n:'Texas Instruments',r:9,b:'blue'}, ORLY:{n:"O'Reilly Automotive",r:10,b:'blue'},
+  NFLX:{n:'Netflix',r:11,b:'blue'}, ABNB:{n:'Airbnb',r:11,b:'blue'},
+  BAC:{n:'Bank of America',r:9,b:'blue'}, WFC:{n:'Wells Fargo',r:8,b:'blue'}, GS:{n:'Goldman Sachs',r:9,b:'blue'},
+  MS:{n:'Morgan Stanley',r:9,b:'blue'}, AXP:{n:'American Express',r:10,b:'blue'},
+  ABBV:{n:'AbbVie',r:9,b:'blue'}, MRK:{n:'Merck',r:8,b:'blue'}, PFE:{n:'Pfizer',r:6,b:'blue'},
+  TMO:{n:'Thermo Fisher',r:10,b:'blue'}, ABT:{n:'Abbott',r:9,b:'blue'}, DHR:{n:'Danaher',r:9,b:'blue'}, AMGN:{n:'Amgen',r:8,b:'blue'},
+  SBUX:{n:'Starbucks',r:8,b:'blue'}, TGT:{n:'Target',r:8,b:'blue'}, LOW:{n:"Lowe's",r:9,b:'blue'},
+  BA:{n:'Boeing',r:8,b:'blue'}, GE:{n:'GE Aerospace',r:9,b:'blue'}, RTX:{n:'RTX',r:8,b:'blue'}, LMT:{n:'Lockheed Martin',r:8,b:'blue'},
+  DE:{n:'Deere',r:9,b:'blue'}, UNP:{n:'Union Pacific',r:8,b:'blue'}, UPS:{n:'UPS',r:7,b:'blue'},
+  T:{n:'AT&T',r:6,b:'blue'}, VZ:{n:'Verizon',r:6,b:'blue'}, CMCSA:{n:'Comcast',r:7,b:'blue'}, NEE:{n:'NextEra Energy',r:8,b:'blue'},
+  TSM:{n:'Taiwan Semiconductor',r:12,b:'blue'}, ASML:{n:'ASML',r:12,b:'blue'}, NVO:{n:'Novo Nordisk',r:12,b:'blue'},
+  SAP:{n:'SAP',r:9,b:'blue'}, SONY:{n:'Sony',r:9,b:'blue'}, TM:{n:'Toyota',r:7,b:'blue'}, NSRGY:{n:'Nestlé',r:7,b:'blue'},
+  UL:{n:'Unilever',r:7,b:'blue'}, DEO:{n:'Diageo',r:7,b:'blue'}, SHEL:{n:'Shell',r:7,b:'blue'}, BABA:{n:'Alibaba',r:8,b:'blue'},
+  ADDYY:{n:'Adidas',r:8,b:'blue'}, LVMUY:{n:'LVMH',r:9,b:'blue'}, EADSY:{n:'Airbus',r:9,b:'blue'},
+  LVMH:{n:'LVMH',r:9,b:'blue'}, AIR:{n:'Airbus',r:9,b:'blue'}, ADIDAS:{n:'Adidas',r:8,b:'blue'}, NESTLE:{n:'Nestlé',r:7,b:'blue'},
+  // --- more moonshots (space / EV / quantum / nuclear / clean energy / fintech / social / biotech) ---
+  RKLB:{n:'Rocket Lab',r:20,b:'moon'}, SHOP:{n:'Shopify',r:15,b:'moon'}, DDOG:{n:'Datadog',r:16,b:'moon'},
+  U:{n:'Unity',r:16,b:'moon'}, ROKU:{n:'Roku',r:16,b:'moon'}, XYZ:{n:'Block',r:16,b:'moon'}, SQ:{n:'Block',r:16,b:'moon'},
+  AFRM:{n:'Affirm',r:18,b:'moon'}, CVNA:{n:'Carvana',r:18,b:'moon'}, RDDT:{n:'Reddit',r:18,b:'moon'},
+  SNAP:{n:'Snap',r:16,b:'moon'}, PINS:{n:'Pinterest',r:14,b:'moon'}, DASH:{n:'DoorDash',r:14,b:'moon'},
+  ENPH:{n:'Enphase',r:16,b:'moon'}, FSLR:{n:'First Solar',r:14,b:'moon'}, PLUG:{n:'Plug Power',r:22,b:'moon'},
+  NIO:{n:'Nio',r:20,b:'moon'}, LI:{n:'Li Auto',r:18,b:'moon'}, XPEV:{n:'XPeng',r:20,b:'moon'},
+  LUNR:{n:'Intuitive Machines',r:24,b:'moon'}, SPCE:{n:'Virgin Galactic',r:22,b:'moon'}, JOBY:{n:'Joby Aviation',r:22,b:'moon'},
+  ACHR:{n:'Archer Aviation',r:22,b:'moon'}, OKLO:{n:'Oklo',r:22,b:'moon'}, SMR:{n:'NuScale Power',r:22,b:'moon'},
+  SOUN:{n:'SoundHound AI',r:24,b:'moon'}, BBAI:{n:'BigBear.ai',r:24,b:'moon'}, RGTI:{n:'Rigetti',r:24,b:'moon'},
+  QBTS:{n:'D-Wave Quantum',r:24,b:'moon'}, RXRX:{n:'Recursion',r:22,b:'moon'}, TEM:{n:'Tempus AI',r:22,b:'moon'},
+  HIMS:{n:'Hims & Hers',r:18,b:'moon'}, CELH:{n:'Celsius',r:15,b:'moon'}, CRSP:{n:'CRISPR Therapeutics',r:18,b:'moon'},
+  GME:{n:'GameStop',r:12,b:'moon'},
 };
 
 // ---------- Sector / theme tags for the Diversification Coach ----------
 const ETF_BROAD_US = new Set(['VOO','VTI','SPY','IVV','DIA']);
-const ETF_TECH     = new Set(['QQQ','QQQM','VGT','VUG','SCHG','SOXX','SMH','ARKK']);
-const ETF_INTL     = new Set(['VXUS','VEA','VWO']);
-const ETF_DIV      = new Set(['SCHD','VYM','DGRO','VIG']);
-const MEGA         = new Set(['AAPL','MSFT','NVDA','AMZN','GOOGL','GOOG','META','AVGO']);
+const ETF_TECH     = new Set(['QQQ','QQQM','VGT','VUG','SCHG','SOXX','SMH','ARKK','XLK','MGK','IWF']);
+const ETF_INTL     = new Set(['VXUS','VEA','VWO','VGK','EFA','IEFA','EEM','SCHF','INDA','EWJ']);
+const ETF_DIV      = new Set(['SCHD','VYM','DGRO','VIG','JEPI','JEPQ']);
+const MEGA         = new Set(['AAPL','MSFT','NVDA','AMZN','GOOGL','GOOG','META','AVGO','NFLX']);
 const SECTOR = {AAPL:'Tech',MSFT:'Tech',GOOGL:'Tech',GOOG:'Tech',AMZN:'Tech',META:'Tech',AVGO:'Tech',
-  V:'Financials',MA:'Financials',JPM:'Financials',
-  JNJ:'Healthcare',UNH:'Healthcare',LLY:'Healthcare',
-  KO:'Consumer',PEP:'Consumer',PG:'Consumer',WMT:'Consumer',HD:'Consumer',MCD:'Consumer',COST:'Consumer',NKE:'Consumer',DIS:'Consumer',
-  XOM:'Energy',CVX:'Energy', CAT:'Industrials',HON:'Industrials'};
+  ORCL:'Tech',CRM:'Tech',ADBE:'Tech',CSCO:'Tech',INTC:'Tech',IBM:'Tech',QCOM:'Tech',TXN:'Tech',NFLX:'Tech',TSM:'Tech',ASML:'Tech',SAP:'Tech',SONY:'Tech',
+  V:'Financials',MA:'Financials',JPM:'Financials',BAC:'Financials',WFC:'Financials',GS:'Financials',MS:'Financials',AXP:'Financials',
+  JNJ:'Healthcare',UNH:'Healthcare',LLY:'Healthcare',ABBV:'Healthcare',MRK:'Healthcare',PFE:'Healthcare',TMO:'Healthcare',ABT:'Healthcare',DHR:'Healthcare',AMGN:'Healthcare',NVO:'Healthcare',
+  KO:'Consumer',PEP:'Consumer',PG:'Consumer',WMT:'Consumer',HD:'Consumer',MCD:'Consumer',COST:'Consumer',NKE:'Consumer',DIS:'Consumer',SBUX:'Consumer',TGT:'Consumer',LOW:'Consumer',ORLY:'Consumer',ABNB:'Consumer',NSRGY:'Consumer',UL:'Consumer',DEO:'Consumer',BABA:'Consumer',TM:'Consumer',ADDYY:'Consumer',LVMUY:'Consumer',LVMH:'Consumer',ADIDAS:'Consumer',NESTLE:'Consumer',
+  XOM:'Energy',CVX:'Energy',SHEL:'Energy',
+  CAT:'Industrials',HON:'Industrials',BA:'Industrials',GE:'Industrials',RTX:'Industrials',LMT:'Industrials',DE:'Industrials',UNP:'Industrials',UPS:'Industrials',EADSY:'Industrials',AIR:'Industrials',
+  T:'Telecom',VZ:'Telecom',CMCSA:'Media',NEE:'Utilities'};
 const THEME = {NVDA:'AI/Chips',AMD:'AI/Chips',SMCI:'AI/Chips',ARM:'AI/Chips',
-  PLTR:'AI/Data',AI:'AI/Data',SNOW:'AI/Data',CRWD:'AI/Data',NET:'AI/Data',
+  PLTR:'AI/Data',AI:'AI/Data',SNOW:'AI/Data',CRWD:'AI/Data',NET:'AI/Data',DDOG:'AI/Data',SOUN:'AI/Data',BBAI:'AI/Data',TEM:'AI/Data',
   COIN:'Crypto',MSTR:'Crypto',MARA:'Crypto',RIOT:'Crypto',
-  TSLA:'EV',RIVN:'EV',LCID:'EV',
-  SOFI:'Fintech',HOOD:'Fintech',UPST:'Fintech',DKNG:'Fintech',
-  IONQ:'Quantum',ASTS:'Space',RBLX:'Gaming'};
+  TSLA:'EV',RIVN:'EV',LCID:'EV',NIO:'EV',LI:'EV',XPEV:'EV',
+  SOFI:'Fintech',HOOD:'Fintech',UPST:'Fintech',DKNG:'Fintech',AFRM:'Fintech',SQ:'Fintech',XYZ:'Fintech',
+  IONQ:'Quantum',RGTI:'Quantum',QBTS:'Quantum',
+  ASTS:'Space',RKLB:'Space',LUNR:'Space',SPCE:'Space',
+  JOBY:'Air Mobility',ACHR:'Air Mobility',
+  OKLO:'Nuclear',SMR:'Nuclear',
+  ENPH:'Clean Energy',FSLR:'Clean Energy',PLUG:'Clean Energy',
+  SNAP:'Social',PINS:'Social',RDDT:'Social',
+  SHOP:'E-commerce',CVNA:'E-commerce',
+  CRSP:'Biotech',RXRX:'Biotech',
+  RBLX:'Gaming',U:'Gaming',ROKU:'Streaming',DASH:'Delivery',HIMS:'Health',CELH:'Consumer',GME:'Meme'};
 
 let model = JSON.parse(JSON.stringify(DEFAULTS));
 
