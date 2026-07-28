@@ -60,6 +60,7 @@
   .field input:disabled{opacity:.7;cursor:default}
   .cell.tick{font-weight:700;text-transform:uppercase}
   .cell.tick.unknown{border-color:#fbbf24;background:rgba(251,191,36,.10)}
+  .cell.tick.checking{border-color:#60a5fa;background:rgba(96,165,250,.08)}
   .cell.num{text-align:right;font-variant-numeric:tabular-nums}
   .col-alloc,.col-ret{width:78px}
   .col-tick{width:72px}
@@ -399,6 +400,11 @@ const WEB3FORMS_KEY = '5bdf75eb-5150-45fe-bf03-3e1bfeabd5e6';
 //   1. Sign up at https://imgbb.com  →  https://api.imgbb.com  →  "Get API Key"
 //   2. Paste it below. Leave the placeholder to send text-only (no chart image link).
 const IMGBB_KEY = 'YOUR-IMGBB-API-KEY';
+// Optional: FMP key so ANY US/Canadian ticker not in the built-in list is validated live.
+//   Get a key at https://site.financialmodelingprep.com  → paste below.
+//   Leave the placeholder to use the built-in list only (unknown tickers flag amber).
+const FMP_KEY = 'YOUR-FMP-API-KEY';
+const fmpCache = {};   // SYMBOL -> {name} if found, null if confirmed not-found, undefined if not yet checked
 const emailOk = s => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 
 // ---------- Formatting ----------
@@ -451,15 +457,22 @@ function buildTable(){
       else if(f==='name'){ row.name=e.target.value; }
       else if(f==='tick'){
         row.tick=e.target.value;
-        const hit=RETURNS[e.target.value.trim().toUpperCase()];
-        row.ret = hit ? hit.r : model[c].base;   // auto from ticker (baseline if unknown)
+        const sym=e.target.value.trim().toUpperCase();
+        const hit=RETURNS[sym];
         const tr=e.target.closest('tr');
-        tr.querySelector('.col-ret').textContent = row.ret;   // show it live
+        row.ret = hit ? hit.r : model[c].base;    // baseline until (or unless) FMP resolves
+        tr.querySelector('.col-ret').textContent = row.ret;
         if(hit){
-          const nmInput=tr.querySelector('.nm');
-          if(!row.name){ row.name=hit.n; nmInput.value=hit.n; }
+          if(!row.name){ row.name=hit.n; tr.querySelector('.nm').value=hit.n; }
+          markState(e.target,'ok');
+        } else if(!sym){
+          markState(e.target,'');
+        } else if(fmpCache[sym]!==undefined){       // previously looked up
+          if(fmpCache[sym]){ if(!row.name){ row.name=fmpCache[sym].name; tr.querySelector('.nm').value=fmpCache[sym].name; } markState(e.target,'ok'); }
+          else markState(e.target,'bad');
+        } else {
+          scheduleFmpLookup(e.target, c, r, sym);   // validate against FMP (US + Canadian)
         }
-        markTick(e.target);
       }
       recalc();
     });
@@ -595,16 +608,60 @@ function recalc(){
 }
 function catTarget(cat){const m=cat.cat.match(/\((\d+)%\)/);return m?+m[1]:100;}
 
-// ---------- Flag a ticker the lookup doesn't recognize ----------
-function markTick(el){
-  const tk=el.value.trim().toUpperCase();
-  const bad = tk && !RETURNS[tk];
-  el.classList.toggle('unknown', bad);
-  el.title = bad ? 'Ticker not recognized — double-check the symbol (uses a default estimate)' : '';
+// ---------- Ticker recognition: built-in list + optional live FMP validation ----------
+function markState(el, state){
+  el.classList.toggle('unknown', state==='bad');
+  el.classList.toggle('checking', state==='checking');
+  el.title = state==='bad' ? 'Ticker not recognized — double-check the symbol (uses a default estimate)'
+           : state==='checking' ? 'Checking ticker…' : '';
 }
+const fmpTimers = new WeakMap();
+function scheduleFmpLookup(inp, c, r, sym){
+  if(FMP_KEY.includes('YOUR-')){ markState(inp,'bad'); return; }   // no key → built-in list only
+  markState(inp,'checking');
+  clearTimeout(fmpTimers.get(inp));
+  fmpTimers.set(inp, setTimeout(async ()=>{
+    const cur=()=>(model[c].rows[r].tick||'').trim().toUpperCase();
+    if(cur()!==sym) return;                         // user kept typing
+    const info=await fmpLookup(sym);
+    if(cur()!==sym) return;                          // symbol changed while awaiting
+    if(info){
+      const nm=inp.closest('tr').querySelector('.nm');
+      if(!model[c].rows[r].name){ model[c].rows[r].name=info.name; if(nm && !nm.value) nm.value=info.name; }
+      markState(inp,'ok');
+    } else {
+      markState(inp,'bad');
+    }
+    renderTips();                                   // refresh the coach's unrecognized list
+  }, 450));
+}
+async function fmpLookup(sym){
+  if(sym in fmpCache) return fmpCache[sym];
+  let found=null;
+  for(const s of [sym, sym+'.TO', sym+'.V']){       // plain, then Toronto, then TSX Venture
+    try{
+      const res=await fetch(`https://financialmodelingprep.com/api/v3/quote/${encodeURIComponent(s)}?apikey=${FMP_KEY}`);
+      if(!res.ok) continue;
+      const j=await res.json();
+      if(Array.isArray(j) && j[0] && j[0].name){ found={name:j[0].name, symbol:s}; break; }
+    }catch(e){ /* try next suffix */ }
+  }
+  fmpCache[sym]=found;
+  return found;
+}
+// A ticker counts as "unknown" only once we're SURE: not built-in, and FMP has confirmed not-found
+// (or FMP is disabled). While a lookup is in flight it's treated as pending, not flagged.
 function unknownTickers(){
+  const noFmp = FMP_KEY.includes('YOUR-');
   const list=[];
-  model.forEach(cat=>cat.rows.forEach(r=>{ const t=r.tick.trim().toUpperCase(); if(t && !RETURNS[t]) list.push(r.tick.trim()); }));
+  model.forEach(cat=>cat.rows.forEach(r=>{
+    const t=r.tick.trim(); if(!t) return;
+    const s=t.toUpperCase();
+    if(RETURNS[s]) return;                           // built-in
+    if(!noFmp && fmpCache[s]===undefined) return;    // still checking → don't flag yet
+    if(fmpCache[s]) return;                           // FMP found it
+    list.push(t);                                    // confirmed unknown
+  }));
   return [...new Set(list)];
 }
 
@@ -651,7 +708,7 @@ function renderTips(){
 
   // Unrecognized tickers — most actionable, goes to the very top
   const unk=unknownTickers();
-  if(unk.length) tips.unshift({k:'warn',b:'Check your tickers',x:`We don't recognize ${unk.join(', ')} — double-check the symbol(s). Unknown tickers use a default return estimate instead of a real one (US ETFs & large caps work best).`});
+  if(unk.length) tips.unshift({k:'warn',b:'Check your tickers',x:`We couldn't find ${unk.join(', ')} — double-check the symbol(s). Unrecognized tickers use a default return estimate.`});
 
   box.innerHTML = tips.length
     ? tips.map(t=>`<div class="tip ${t.k}"><span class="tb">${t.b}</span>${t.x}</div>`).join('')
