@@ -321,6 +321,28 @@ const RETURNS = {
   QBTS:{n:'D-Wave Quantum',r:24,b:'moon'}, RXRX:{n:'Recursion',r:22,b:'moon'}, TEM:{n:'Tempus AI',r:22,b:'moon'},
   HIMS:{n:'Hims & Hers',r:18,b:'moon'}, CELH:{n:'Celsius',r:15,b:'moon'}, CRSP:{n:'CRISPR Therapeutics',r:18,b:'moon'},
   GME:{n:'GameStop',r:12,b:'moon'},
+  // --- Canadian ETFs (TSX) ---
+  VFV:{n:'Vanguard S&P 500 ETF (CAD)',r:10,b:'etf'}, ZSP:{n:'BMO S&P 500 ETF (CAD)',r:10,b:'etf'}, VUN:{n:'Vanguard US Total Mkt (CAD)',r:10,b:'etf'},
+  VEQT:{n:'Vanguard All-Equity ETF',r:9,b:'etf'}, XEQT:{n:'iShares All-Equity ETF',r:9,b:'etf'}, XEGT:{n:'iShares Core Equity ETF',r:9,b:'etf'},
+  XIU:{n:'iShares S&P/TSX 60 ETF',r:8,b:'etf'}, XIC:{n:'iShares Core S&P/TSX ETF',r:8,b:'etf'}, VCN:{n:'Vanguard FTSE Canada ETF',r:8,b:'etf'}, ZEB:{n:'BMO Equal-Weight Banks ETF',r:8,b:'etf'},
+  // --- Canadian blue chips (TSX) ---
+  RY:{n:'Royal Bank of Canada',r:9,b:'blue'}, TD:{n:'TD Bank',r:8,b:'blue'}, BNS:{n:'Bank of Nova Scotia',r:8,b:'blue'},
+  BMO:{n:'Bank of Montreal',r:8,b:'blue'}, CM:{n:'CIBC',r:8,b:'blue'}, MFC:{n:'Manulife',r:9,b:'blue'},
+  ENB:{n:'Enbridge',r:8,b:'blue'}, CNQ:{n:'Canadian Natural Res.',r:8,b:'blue'}, SU:{n:'Suncor Energy',r:8,b:'blue'}, TRP:{n:'TC Energy',r:7,b:'blue'},
+  CNR:{n:'Canadian National Railway',r:8,b:'blue'}, CP:{n:'CPKC Railway',r:9,b:'blue'}, WCN:{n:'Waste Connections',r:9,b:'blue'},
+  BCE:{n:'BCE (Bell)',r:6,b:'blue'}, BN:{n:'Brookfield Corp',r:11,b:'blue'}, BAM:{n:'Brookfield Asset Mgmt',r:11,b:'blue'},
+  ATD:{n:'Couche-Tard',r:10,b:'blue'}, DOL:{n:'Dollarama',r:11,b:'blue'}, NTR:{n:'Nutrien',r:8,b:'blue'}, TRI:{n:'Thomson Reuters',r:9,b:'blue'},
+  // --- more US + Canadian moonshots (AI, memory, space, nuclear/uranium, crypto, quantum, robotics) ---
+  SNDK:{n:'SanDisk',r:16,b:'moon'}, IREN:{n:'IREN Limited',r:22,b:'moon'}, CRWV:{n:'CoreWeave',r:22,b:'moon'},
+  ALAB:{n:'Astera Labs',r:20,b:'moon'}, CRDO:{n:'Credo Technology',r:20,b:'moon'}, NBIS:{n:'Nebius Group',r:22,b:'moon'}, APP:{n:'AppLovin',r:16,b:'moon'},
+  MU:{n:'Micron Technology',r:14,b:'moon'},
+  RDW:{n:'Redwire',r:24,b:'moon'}, PL:{n:'Planet Labs',r:22,b:'moon'}, BKSY:{n:'BlackSky',r:24,b:'moon'}, KTOS:{n:'Kratos Defense',r:14,b:'moon'},
+  NNE:{n:'Nano Nuclear',r:24,b:'moon'}, LEU:{n:'Centrus Energy',r:20,b:'moon'}, UEC:{n:'Uranium Energy',r:22,b:'moon'},
+  CCJ:{n:'Cameco',r:14,b:'moon'}, NXE:{n:'NexGen Energy',r:22,b:'moon'}, DNN:{n:'Denison Mines',r:24,b:'moon'}, UUUU:{n:'Energy Fuels',r:22,b:'moon'},
+  MP:{n:'MP Materials',r:18,b:'moon'}, TMC:{n:'TMC the metals co.',r:24,b:'moon'}, SERV:{n:'Serve Robotics',r:24,b:'moon'},
+  LAES:{n:'SEALSQ',r:24,b:'moon'}, QUBT:{n:'Quantum Computing Inc',r:24,b:'moon'}, QSI:{n:'Quantum-Si',r:22,b:'moon'},
+  HUT:{n:'Hut 8',r:22,b:'moon'}, BITF:{n:'Bitfarms',r:24,b:'moon'}, HIVE:{n:'Hive Digital',r:24,b:'moon'}, GLXY:{n:'Galaxy Digital',r:22,b:'moon'},
+  BB:{n:'BlackBerry',r:12,b:'moon'}, LSPD:{n:'Lightspeed Commerce',r:16,b:'moon'},
 };
 
 // ---------- Sector / theme tags for the Diversification Coach ----------
@@ -336,7 +358,11 @@ const SECTOR = {AAPL:'Tech',MSFT:'Tech',GOOGL:'Tech',GOOG:'Tech',AMZN:'Tech',MET
   KO:'Consumer',PEP:'Consumer',PG:'Consumer',WMT:'Consumer',HD:'Consumer',MCD:'Consumer',COST:'Consumer',NKE:'Consumer',DIS:'Consumer',SBUX:'Consumer',TGT:'Consumer',LOW:'Consumer',ORLY:'Consumer',ABNB:'Consumer',NSRGY:'Consumer',UL:'Consumer',DEO:'Consumer',BABA:'Consumer',TM:'Consumer',ADDYY:'Consumer',LVMUY:'Consumer',LVMH:'Consumer',ADIDAS:'Consumer',NESTLE:'Consumer',
   XOM:'Energy',CVX:'Energy',SHEL:'Energy',
   CAT:'Industrials',HON:'Industrials',BA:'Industrials',GE:'Industrials',RTX:'Industrials',LMT:'Industrials',DE:'Industrials',UNP:'Industrials',UPS:'Industrials',EADSY:'Industrials',AIR:'Industrials',
-  T:'Telecom',VZ:'Telecom',CMCSA:'Media',NEE:'Utilities'};
+  T:'Telecom',VZ:'Telecom',CMCSA:'Media',NEE:'Utilities',
+  RY:'Financials',TD:'Financials',BNS:'Financials',BMO:'Financials',CM:'Financials',MFC:'Financials',BN:'Financials',BAM:'Financials',
+  ENB:'Energy',CNQ:'Energy',SU:'Energy',TRP:'Energy',
+  CNR:'Industrials',CP:'Industrials',WCN:'Industrials',
+  BCE:'Telecom',ATD:'Consumer',DOL:'Consumer',NTR:'Materials',TRI:'Media'};
 const THEME = {NVDA:'AI/Chips',AMD:'AI/Chips',SMCI:'AI/Chips',ARM:'AI/Chips',
   PLTR:'AI/Data',AI:'AI/Data',SNOW:'AI/Data',CRWD:'AI/Data',NET:'AI/Data',DDOG:'AI/Data',SOUN:'AI/Data',BBAI:'AI/Data',TEM:'AI/Data',
   COIN:'Crypto',MSTR:'Crypto',MARA:'Crypto',RIOT:'Crypto',
@@ -350,7 +376,14 @@ const THEME = {NVDA:'AI/Chips',AMD:'AI/Chips',SMCI:'AI/Chips',ARM:'AI/Chips',
   SNAP:'Social',PINS:'Social',RDDT:'Social',
   SHOP:'E-commerce',CVNA:'E-commerce',
   CRSP:'Biotech',RXRX:'Biotech',
-  RBLX:'Gaming',U:'Gaming',ROKU:'Streaming',DASH:'Delivery',HIMS:'Health',CELH:'Consumer',GME:'Meme'};
+  RBLX:'Gaming',U:'Gaming',ROKU:'Streaming',DASH:'Delivery',HIMS:'Health',CELH:'Consumer',GME:'Meme',
+  SNDK:'AI/Chips',MU:'AI/Chips',ALAB:'AI/Chips',CRDO:'AI/Chips',
+  CRWV:'AI/Data',NBIS:'AI/Data',APP:'AI/Data',BB:'AI/Data',
+  IREN:'Crypto',HUT:'Crypto',BITF:'Crypto',HIVE:'Crypto',GLXY:'Crypto',
+  RDW:'Space',PL:'Space',BKSY:'Space',
+  NNE:'Nuclear',LEU:'Nuclear',UEC:'Nuclear',CCJ:'Nuclear',NXE:'Nuclear',DNN:'Nuclear',UUUU:'Nuclear',
+  LAES:'Quantum',QUBT:'Quantum',QSI:'Quantum',
+  MP:'Materials',TMC:'Materials',SERV:'Robotics',KTOS:'Defense',LSPD:'E-commerce'};
 
 let model = JSON.parse(JSON.stringify(DEFAULTS));
 
