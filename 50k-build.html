@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FlowState Alpha — $50K Portfolio Build</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-1:#0a0e27; --bg-2:#1a1040; --bg-3:#241456;
+    --card:rgba(255,255,255,0.04);
+    --line:rgba(255,255,255,0.10);
+    --cyan:#22d3ee; --violet:#a78bfa; --gold:#fbbf24;
+    --text:#e7e9f4; --muted:#8b90ad;
+    --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --disp:'Space Grotesk',system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{
+    font-family:var(--disp);color:var(--text);
+    background:linear-gradient(160deg,var(--bg-1) 0%,var(--bg-2) 55%,var(--bg-3) 100%);
+    min-height:100vh;padding:32px 16px 80px;
+  }
+  .wrap{max-width:760px;margin:0 auto}
+
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:var(--cyan);margin-bottom:10px}
+  h1{font-size:clamp(28px,5vw,42px);font-weight:700;line-height:1.08;letter-spacing:-.01em}
+  h1 .amt{background:linear-gradient(90deg,var(--cyan),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--muted);margin-top:10px;font-size:15px;line-height:1.55;max-width:56ch}
+
+  .allocbar{margin:28px 0 6px;border-radius:8px;overflow:hidden;display:flex;height:14px;border:1px solid var(--line)}
+  .allocbar .seg-core{width:60%;background:linear-gradient(90deg,#0ea5c4,var(--cyan))}
+  .allocbar .seg-anchor{width:30%;background:linear-gradient(90deg,#7c5cd6,var(--violet))}
+  .allocbar .seg-moon{width:10%;background:linear-gradient(90deg,#d9a010,var(--gold))}
+  .alloclegend{display:flex;gap:18px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:34px}
+  .alloclegend b{color:var(--text);font-weight:600}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;vertical-align:middle}
+
+  .who{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:36px}
+  @media(max-width:560px){.who{grid-template-columns:1fr}}
+  .field label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+  input[type=text],input[type=email],textarea{
+    width:100%;background:var(--card);border:1px solid var(--line);border-radius:8px;
+    color:var(--text);font-family:var(--disp);font-size:15px;padding:11px 13px;outline:none;
+    transition:border-color .15s;
+  }
+  input:focus,textarea:focus{border-color:var(--cyan)}
+  ::placeholder{color:#565b78}
+
+  .section{margin-bottom:38px}
+  .sechead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px;flex-wrap:wrap}
+  .sechead h2{font-size:20px;font-weight:600}
+  .sechead .tag{font-family:var(--mono);font-size:12px;padding:3px 10px;border-radius:99px;border:1px solid var(--line)}
+  .tag.core{color:var(--cyan);border-color:rgba(34,211,238,.35)}
+  .tag.anchor{color:var(--violet);border-color:rgba(167,139,250,.35)}
+  .tag.moon{color:var(--gold);border-color:rgba(251,191,36,.35)}
+  .secdesc{color:var(--muted);font-size:13.5px;line-height:1.5;margin-bottom:16px;max-width:60ch}
+
+  .slot{
+    border:1.5px dashed var(--line);border-radius:12px;padding:16px;margin-bottom:12px;
+    display:grid;grid-template-columns:110px 1fr;gap:14px;align-items:start;
+    transition:border-color .2s, background .2s;
+  }
+  .slot.filled{border-style:solid;background:var(--card)}
+  .slot.filled.c-core{border-color:rgba(34,211,238,.4)}
+  .slot.filled.c-anchor{border-color:rgba(167,139,250,.4)}
+  .slot.filled.c-moon{border-color:rgba(251,191,36,.4)}
+  @media(max-width:560px){.slot{grid-template-columns:1fr;gap:10px}}
+  .slot .amt{font-family:var(--mono);font-size:15px;font-weight:600;padding-top:10px;white-space:nowrap}
+  .amt.c-core{color:var(--cyan)} .amt.c-anchor{color:var(--violet)} .amt.c-moon{color:var(--gold)}
+  .slot textarea{resize:vertical;min-height:42px;font-size:13.5px}
+  .slot input.ticker{font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+
+  .totals{
+    position:sticky;bottom:12px;background:rgba(10,14,39,.92);backdrop-filter:blur(8px);
+    border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-top:10px;
+  }
+  .totrow{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  .totlabel{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .totval{font-family:var(--mono);font-size:22px;font-weight:600}
+  .totval .of{color:var(--muted);font-size:14px;font-weight:400}
+  .bar{height:6px;border-radius:99px;background:rgba(255,255,255,.07);margin-top:12px;overflow:hidden}
+  .bar>div{height:100%;width:0%;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--violet),var(--gold));transition:width .3s}
+  .btn{
+    font-family:var(--disp);font-weight:600;font-size:14px;color:#0a0e27;
+    background:linear-gradient(90deg,var(--cyan),var(--violet));border:none;border-radius:9px;
+    padding:11px 20px;cursor:pointer;transition:opacity .15s;
+  }
+  .btn:hover{opacity:.88}
+  .btn:disabled{opacity:.35;cursor:not-allowed}
+  .copiednote{font-family:var(--mono);font-size:12px;color:var(--cyan);margin-left:10px;opacity:0;transition:opacity .2s}
+  .copiednote.show{opacity:1}
+
+  footer{margin-top:46px;color:var(--muted);font-size:11.5px;line-height:1.6;border-top:1px solid var(--line);padding-top:18px}
+  footer b{color:var(--text);font-weight:600}
+
+  @media print{
+    body{background:#fff;color:#111}
+    .totals{position:static;background:#f3f3f7}
+    .btn,.copiednote{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">FlowState Alpha · US Markets Academy</div>
+  <h1>Build your <span class="amt">$50,000</span> portfolio</h1>
+  <p class="sub">Same framework as your $10K practice build — five times the capital, same discipline. Fill every slot, write one honest sentence on why each pick earns its spot, then copy your build and send it in.</p>
+
+  <div class="allocbar" aria-hidden="true">
+    <div class="seg-core"></div><div class="seg-anchor"></div><div class="seg-moon"></div>
+  </div>
+  <div class="alloclegend">
+    <span><span class="dot" style="background:var(--cyan)"></span><b>Core</b> · 3 ETFs · 60%</span>
+    <span><span class="dot" style="background:var(--violet)"></span><b>Anchors</b> · 3 blue chips · 30%</span>
+    <span><span class="dot" style="background:var(--gold)"></span><b>Moonshots</b> · 2 picks · 10%</span>
+  </div>
+
+  <div class="who">
+    <div class="field"><label for="sname">Your name</label><input type="text" id="sname" placeholder="First and last name"></div>
+    <div class="field"><label for="semail">Email</label><input type="email" id="semail" placeholder="you@email.com"></div>
+  </div>
+
+  <div class="section" id="sec-core">
+    <div class="sechead"><h2>Core</h2><span class="tag core">3 × $10,000</span></div>
+    <p class="secdesc">Broad, boring, and built to compound. ETFs only — this is the foundation the rest of the build stands on.</p>
+  </div>
+
+  <div class="section" id="sec-anchor">
+    <div class="sechead"><h2>Anchors</h2><span class="tag anchor">3 × $5,000</span></div>
+    <p class="secdesc">Blue-chip single names with a moat you can explain in one sentence. If you can't name the moat, it's not an anchor.</p>
+  </div>
+
+  <div class="section" id="sec-moon">
+    <div class="sechead"><h2>Moonshots</h2><span class="tag moon">2 × $2,500</span></div>
+    <p class="secdesc">Higher risk, capped at 10% of the build. Position sizing is what makes a moonshot a bet instead of a blow-up.</p>
+  </div>
+
+  <div class="totals">
+    <div class="totrow">
+      <div>
+        <div class="totlabel">Slots filled</div>
+        <div class="totval" id="totval">$0 <span class="of">/ $50,000</span></div>
+      </div>
+      <div>
+        <button class="btn" id="copybtn" disabled>Copy my build</button>
+        <span class="copiednote" id="copiednote">Copied — paste it into your submission email</span>
+      </div>
+    </div>
+    <div class="bar"><div id="barfill"></div></div>
+  </div>
+
+  <footer>
+    <b>FlowState Alpha</b> · US Markets Summer Academy · This is an educational exercise with simulated money. Nothing here is financial advice, and FlowState Alpha is not a registered investment adviser. Do your own research before investing real capital.
+  </footer>
+</div>
+
+<script>
+  const SLOTS = [
+    {sec:'sec-core',   cls:'core',   amt:10000, ph:'ETF ticker'},
+    {sec:'sec-core',   cls:'core',   amt:10000, ph:'ETF ticker'},
+    {sec:'sec-core',   cls:'core',   amt:10000, ph:'ETF ticker'},
+    {sec:'sec-anchor', cls:'anchor', amt:5000,  ph:'Ticker'},
+    {sec:'sec-anchor', cls:'anchor', amt:5000,  ph:'Ticker'},
+    {sec:'sec-anchor', cls:'anchor', amt:5000,  ph:'Ticker'},
+    {sec:'sec-moon',   cls:'moon',   amt:2500,  ph:'Ticker'},
+    {sec:'sec-moon',   cls:'moon',   amt:2500,  ph:'Ticker'},
+  ];
+  const fmt = n => '$' + n.toLocaleString('en-US');
+  const state = SLOTS.map(()=>({ticker:'',why:''}));
+
+  SLOTS.forEach((s,i)=>{
+    const el = document.createElement('div');
+    el.className = 'slot c-'+s.cls;
+    el.innerHTML =
+      '<div class="amt c-'+s.cls+'">'+fmt(s.amt)+'</div>'+
+      '<div style="display:grid;gap:8px">'+
+        '<input class="ticker" type="text" maxlength="8" placeholder="'+s.ph+'" data-i="'+i+'" data-k="ticker" aria-label="Ticker for '+fmt(s.amt)+' slot">'+
+        '<textarea rows="1" placeholder="Why this one? One sentence." data-i="'+i+'" data-k="why" aria-label="Reason for this pick"></textarea>'+
+      '</div>';
+    document.getElementById(s.sec).appendChild(el);
+  });
+
+  const totval = document.getElementById('totval');
+  const barfill = document.getElementById('barfill');
+  const copybtn = document.getElementById('copybtn');
+  const copiednote = document.getElementById('copiednote');
+
+  function refresh(){
+    let total = 0;
+    document.querySelectorAll('.slot').forEach((el,i)=>{
+      const filled = state[i].ticker.trim().length > 0;
+      el.classList.toggle('filled', filled);
+      if(filled) total += SLOTS[i].amt;
+    });
+    totval.innerHTML = fmt(total) + ' <span class="of">/ $50,000</span>';
+    barfill.style.width = (total/50000*100) + '%';
+    copybtn.disabled = total !== 50000;
+  }
+
+  document.addEventListener('input', e=>{
+    const i = e.target.dataset.i;
+    if(i === undefined) return;
+    state[i][e.target.dataset.k] = e.target.value;
+    if(e.target.dataset.k==='ticker') e.target.value = e.target.value.toUpperCase();
+    refresh();
+  });
+
+  copybtn.addEventListener('click', ()=>{
+    const name = document.getElementById('sname').value.trim() || '(no name)';
+    const email = document.getElementById('semail').value.trim() || '(no email)';
+    const lines = [
+      'FLOWSTATE ALPHA — $50K PORTFOLIO BUILD',
+      'Student: '+name+'  ·  '+email, '',
+      'CORE (3 × $10,000)'
+    ];
+    const section = [ [0,3,'ANCHORS (3 × $5,000)'], [3,6,'MOONSHOTS (2 × $2,500)'], [6,8,null] ];
+    section.forEach(([a,b,next])=>{
+      for(let i=a;i<b;i++){
+        lines.push('  '+(state[i].ticker||'—')+' — '+fmt(SLOTS[i].amt)+(state[i].why?'  ·  '+state[i].why:''));
+      }
+      if(next){ lines.push('', next); }
+    });
+    lines.push('', 'Total: $50,000');
+    const text = lines.join('\n');
+    const done = ()=>{ copiednote.classList.add('show'); setTimeout(()=>copiednote.classList.remove('show'), 2600); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(()=>{ window.prompt('Copy your build:', text); });
+    } else {
+      window.prompt('Copy your build:', text);
+    }
+  });
+
+  refresh();
+</script>
+</body>
+</html>
